@@ -877,6 +877,64 @@ function initIntro() {
   }
 }
 
+async function showStats() {
+  let stats
+  if (currentUser) {
+    stats = await loadSupabaseStats()
+  }
+  if (!stats) {
+    const s = getLocalStats()
+    stats = {
+      streak: s.streak,
+      plays: s.plays,
+      avg: s.plays > 0 ? (s.totalScore / s.plays).toFixed(1) : '—',
+      dist: s.dist
+    }
+  }
+
+  document.getElementById('cscore').textContent = `${getLocalStats().lastScore}/5`
+  document.getElementById('cmsg').textContent = 'Come back tomorrow for the next game.'
+  document.getElementById('streak-num').textContent = stats.streak
+  document.getElementById('played-num').textContent = stats.plays
+  document.getElementById('avg-num').textContent = stats.avg
+
+  renderDist(stats.dist, getLocalStats().lastScore)
+
+  // Rebuild emoji row from last saved answers if available
+  const eg = document.getElementById('egrid')
+  eg.innerHTML = ''
+
+  // Share text using saved data
+  const s = getLocalStats()
+  document.getElementById('sharebox').textContent =
+    `PopGuess #${dayNum()}\n${s.lastScore}/5  🔥 ${stats.streak}-day streak\n\npopguess.io`
+
+  renderDoneAuth()
+
+  const doneAuthEl = document.getElementById('done-auth-el')
+  if (currentUser) {
+    const label = currentUser.email.split('@')[0]
+    doneAuthEl.innerHTML = `<button class="user-chip" onclick="signOut()">${label} · Sign out</button>`
+  } else {
+    doneAuthEl.innerHTML = ''
+  }
+
+  // Hide the question review section since we don't have this session's answers
+  document.getElementById('review').innerHTML = ''
+
+  // Add a back button at the top
+  const hdr = document.querySelector('#s-done .hdr')
+  if (!hdr.querySelector('.back-to-home')) {
+    const backBtn = document.createElement('button')
+    backBtn.className = 'user-chip back-to-home'
+    backBtn.textContent = '← Home'
+    backBtn.onclick = () => { show('s-intro'); initIntro() }
+    hdr.appendChild(backBtn)
+  }
+
+  show('s-done')
+}
+
 // ─────────────────────────────────────────────────────
 // Game flow
 // ─────────────────────────────────────────────────────
