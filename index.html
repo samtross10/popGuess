@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PopGuess</title>
+
+  <!-- Supabase loaded from CDN — no npm or bundler needed -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    /* ── Reset & base ───────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #ffffff;
+      --bg2:      #f5f4f0;
+      --bg3:      #eeedea;
+      --text:     #111110;
+      --text2:    #6b6a66;
+      --text3:    #a09f9b;
+      --border:   rgba(0,0,0,0.10);
+      --border2:  rgba(0,0,0,0.18);
+      --green-bg: #e8f5ec;
+      --green-tx: #1a6633;
+      --green-bd: rgba(26,102,51,0.25);
+      --red-bg:   #fdecea;
+      --red-tx:   #a32d2d;
+      --red-bd:   rgba(163,45,45,0.25);
+      --radius:   10px;
+      --radius-lg:14px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg:       #111110;
+        --bg2:      #1c1c1b;
+        --bg3:      #252523;
+        --text:     #f0efe9;
+        --text2:    #8a8a85;
+        --text3:    #5c5c58;
+        --border:   rgba(255,255,255,0.10);
+        --border2:  rgba(255,255,255,0.18);
+        --green-bg: #0d2e18;
+        --green-tx: #4ade80;
+        --green-bd: rgba(74,222,128,0.2);
+        --red-bg:   #2d0f0f;
+        --red-tx:   #f87171;
+        --red-bd:   rgba(248,113,113,0.2);
+      }
+    }
+
+    html, body {
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Layout ─────────────────────────────────────── */
+    .pg {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 1.5rem 1.25rem 4rem;
+    }
+
+    .screen { display: none; flex-direction: column; }
+    .screen.active { display: flex; }
+
+    /* ── Typography ─────────────────────────────────── */
+    .logo { font-size: 18px; font-weight: 600; letter-spacing: -.01em; }
+    .logo em { font-style: normal; color: var(--green-tx); }
+
+    /* ── Header row ─────────────────────────────────── */
+    .hdr {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    /* ── Progress bar ───────────────────────────────── */
+    .progress {
+      height: 2px;
+      background: var(--bg3);
+      border-radius: 2px;
+      margin-bottom: 1.5rem;
+      overflow: hidden;
+    }
+    .pf {
+      height: 100%;
+      background: var(--text);
+      border-radius: 2px;
+      transition: width .45s ease;
+    }
+
+    /* ── Answer dots ────────────────────────────────── */
+    .dots { display: flex; gap: 8px; margin-bottom: 1.75rem; }
+    .dot {
+      width: 26px; height: 26px; border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--bg2);
+      transition: background .2s, border-color .2s;
+    }
+    .dot.ok { background: var(--green-bg); border-color: var(--green-bd); }
+    .dot.no { background: var(--red-bg);   border-color: var(--red-bd); }
+
+    /* ── Category label ─────────────────────────────── */
+    .cat {
+      font-size: 11px; font-weight: 600;
+      letter-spacing: .08em; text-transform: uppercase;
+      color: var(--text3); margin-bottom: .5rem;
+    }
+
+    /* ── Question text ──────────────────────────────── */
+    .qtext {
+      font-size: 16px; line-height: 1.6;
+      color: var(--text); margin-bottom: 1.5rem;
+    }
+
+    /* ── Threshold card ─────────────────────────────── */
+    .tcard {
+      background: var(--bg2);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem 1.5rem;
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+    .tlabel { font-size: 12px; color: var(--text2); margin-bottom: .35rem; }
+    .tval {
+      font-size: 44px; font-weight: 600;
+      letter-spacing: -.025em; line-height: 1;
+      color: var(--text);
+    }
+
+    /* ── Higher / Lower buttons ─────────────────────── */
+    .brow { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1.25rem; }
+    .gbtn {
+      padding: 14px 8px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border2);
+      background: var(--bg);
+      font-size: 15px; font-weight: 500;
+      color: var(--text);
+      cursor: pointer; font-family: inherit;
+      transition: background .12s, opacity .12s, transform .1s;
+    }
+    .gbtn:hover:not(:disabled) { background: var(--bg2); }
+    .gbtn:active:not(:disabled) { transform: scale(.98); }
+    .gbtn.ok { background: var(--green-bg); color: var(--green-tx); border-color: var(--green-bd); }
+    .gbtn.no { background: var(--red-bg);   color: var(--red-tx);   border-color: var(--red-bd); }
+    .gbtn.dim { opacity: .3; }
+
+    /* ── Reveal card ────────────────────────────────── */
+    .revcard {
+      background: var(--bg2);
+      border-radius: var(--radius-lg);
+      padding: 1.1rem 1.25rem;
+      margin-bottom: 1.25rem;
+      display: none;
+      animation: fadeUp .2s ease;
+    }
+    .revcard.show { display: block; }
+    .revlabel { font-size: 12px; color: var(--text2); margin-bottom: .3rem; }
+    .revnum { font-size: 28px; font-weight: 600; margin-bottom: .2rem; }
+    .revsrc { font-size: 11.5px; color: var(--text3); }
+
+    /* ── Next button ────────────────────────────────── */
+    .nxtbtn {
+      width: 100%; padding: 14px;
+      border-radius: var(--radius);
+      border: none;
+      background: var(--text); color: var(--bg);
+      font-size: 15px; font-weight: 500;
+      cursor: pointer; font-family: inherit;
+      transition: opacity .15s;
+      display: none;
+    }
+    .nxtbtn:hover { opacity: .82; }
+    .nxtbtn.show { display: block; }
+
+    /* ── Primary / secondary buttons ───────────────── */
+    .btn-primary {
+      width: 100%; padding: 14px;
+      border-radius: var(--radius);
+      border: none;
+      background: var(--text); color: var(--bg);
+      font-size: 15px; font-weight: 500;
+      cursor: pointer; font-family: inherit;
+      transition: opacity .15s;
+      margin-bottom: .75rem;
+    }
+    .btn-primary:hover { opacity: .82; }
+    .btn-primary:disabled { opacity: .35; cursor: default; }
+
+    .btn-secondary {
+      width: 100%; padding: 12px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border2);
+      background: transparent;
+      font-size: 14px; font-weight: 500; color: var(--text2);
+      cursor: pointer; font-family: inherit;
+      transition: background .12s;
+      margin-bottom: .75rem;
+    }
+    .btn-secondary:hover { background: var(--bg2); }
+
+    /* ── Intro screen ───────────────────────────────── */
+    .intro-title {
+      font-size: 36px; font-weight: 700;
+      letter-spacing: -.03em; line-height: 1.1;
+      margin-bottom: .5rem;
+    }
+    .intro-sub {
+      font-size: 15px; color: var(--text2);
+      line-height: 1.6; margin-bottom: 1.75rem;
+    }
+    .how { display: flex; gap: 12px; align-items: flex-start; margin-bottom: .9rem; }
+    .hnum {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: var(--bg3);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 600; color: var(--text2);
+      flex-shrink: 0; margin-top: 2px;
+    }
+    .htxt { font-size: 14px; color: var(--text2); line-height: 1.5; }
+
+    .daycard {
+      background: var(--bg2);
+      border-radius: var(--radius);
+      padding: .9rem 1rem;
+      margin-bottom: 1rem;
+    }
+    .daycard-lbl { font-size: 11px; color: var(--text3); margin-bottom: 3px; }
+    .daycard-val { font-size: 14px; font-weight: 500; }
+
+    /* ── Already-played card ────────────────────────── */
+    .already-card {
+      background: var(--bg2);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      text-align: center;
+      margin-bottom: 1rem;
+      border: 1px solid var(--border);
+    }
+    .already-score { font-size: 36px; font-weight: 700; margin-bottom: .3rem; }
+    .already-msg { font-size: 13px; color: var(--text2); }
+
+    /* ── User chip (top right when signed in) ────────── */
+    .user-chip {
+      font-size: 12px; color: var(--text2);
+      padding: 5px 11px;
+      border-radius: 100px;
+      border: 1px solid var(--border);
+      background: transparent;
+      cursor: pointer; font-family: inherit;
+      transition: background .12s;
+      white-space: nowrap;
+    }
+    .user-chip:hover { background: var(--bg2); }
+
+    /* ── Results screen ─────────────────────────────── */
+    .cscore {
+      font-size: 68px; font-weight: 700;
+      letter-spacing: -.04em; line-height: 1;
+      margin-bottom: .25rem;
+    }
+    .cmsg { font-size: 15px; color: var(--text2); margin-bottom: 1.5rem; }
+
+    .stat-row { display: flex; gap: 10px; margin-bottom: 1.5rem; }
+    .stat-pill {
+      flex: 1;
+      background: var(--bg2);
+      border-radius: var(--radius);
+      padding: .85rem .75rem;
+      text-align: center;
+    }
+    .stat-num { font-size: 24px; font-weight: 600; line-height: 1; margin-bottom: 4px; }
+    .stat-lbl { font-size: 10px; font-weight: 600; letter-spacing: .07em; color: var(--text3); text-transform: uppercase; }
+
+    /* ── Score distribution ─────────────────────────── */
+    .dist-section { margin-bottom: 1.5rem; }
+    .dist-title {
+      font-size: 11px; font-weight: 600;
+      letter-spacing: .07em; text-transform: uppercase;
+      color: var(--text3); margin-bottom: .75rem;
+    }
+    .dist-row {
+      display: grid;
+      grid-template-columns: 16px 1fr 28px;
+      gap: 8px; align-items: center;
+      margin-bottom: 6px;
+    }
+    .dist-label { font-size: 12px; font-weight: 600; color: var(--text2); text-align: center; }
+    .dist-bar-wrap {
+      height: 20px;
+      background: var(--bg3);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .dist-bar {
+      height: 100%; border-radius: 4px;
+      background: var(--border2);
+      min-width: 0;
+      transition: width .7s ease;
+    }
+    .dist-bar.curr { background: var(--green-tx); }
+    .dist-count { font-size: 12px; color: var(--text2); text-align: right; }
+
+    /* ── Emoji result blocks ────────────────────────── */
+    .egrid { display: flex; gap: 6px; margin-bottom: 1rem; }
+    .eblock {
+      width: 42px; height: 42px;
+      border-radius: var(--radius);
+    }
+    .eblock.ok { background: var(--green-bg); }
+    .eblock.no { background: var(--red-bg); }
+
+    /* ── Share box ──────────────────────────────────── */
+    .sharebox {
+      background: var(--bg2);
+      border-radius: var(--radius);
+      padding: 1rem 1.1rem;
+      font-family: 'SF Mono', 'Fira Mono', monospace;
+      font-size: 13px; line-height: 1.9;
+      color: var(--text);
+      white-space: pre;
+      margin-bottom: .75rem;
+    }
+    .copybtn {
+      width: 100%; padding: 12px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border2);
+      background: var(--bg);
+      font-size: 14px; font-weight: 500; color: var(--text);
+      cursor: pointer; font-family: inherit;
+      transition: background .12s;
+      margin-bottom: 1.25rem;
+    }
+    .copybtn:hover { background: var(--bg2); }
+
+    /* ── Sign-in CTA (finish screen) ─────────────────── */
+    .signin-cta {
+      border: 1px solid var(--border2);
+      border-radius: var(--radius-lg);
+      padding: 1rem 1.1rem;
+      margin-bottom: 1.5rem;
+      display: flex; gap: 12px; align-items: center;
+      cursor: pointer;
+      transition: background .12s;
+    }
+    .signin-cta:hover { background: var(--bg2); }
+    .cta-ico {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: var(--bg3);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 600; color: var(--text2);
+      flex-shrink: 0;
+    }
+    .cta-title { font-size: 14px; font-weight: 500; margin-bottom: 2px; }
+    .cta-sub { font-size: 12px; color: var(--text2); }
+
+    /* ── Synced badge ───────────────────────────────── */
+    .synced-badge {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--green-bg);
+      border-radius: var(--radius);
+      padding: .75rem 1rem;
+      margin-bottom: 1.5rem;
+      font-size: 13px; font-weight: 500;
+      color: var(--green-tx);
+    }
+    .synced-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--green-tx); flex-shrink: 0;
+    }
+
+    /* ── Question review ────────────────────────────── */
+    .rev-section { border-top: 1px solid var(--border); padding-top: 1.25rem; }
+    .rev-hdr {
+      font-size: 11px; font-weight: 600;
+      letter-spacing: .07em; text-transform: uppercase;
+      color: var(--text3); margin-bottom: .75rem;
+    }
+    .ritem {
+      display: grid; grid-template-columns: 16px 1fr;
+      gap: 10px; align-items: start;
+      padding: .85rem 0;
+      border-top: 1px solid var(--border);
+    }
+    .rico {
+      width: 14px; height: 14px; border-radius: 50%;
+      margin-top: 3px; flex-shrink: 0;
+    }
+    .rico.ok { background: var(--green-bg); outline: 2px solid var(--green-bd); }
+    .rico.no { background: var(--red-bg);   outline: 2px solid var(--red-bd); }
+    .rq { font-size: 13px; color: var(--text2); margin-bottom: 4px; line-height: 1.4; }
+    .ra { font-size: 14px; font-weight: 500; }
+    .rsrc { font-weight: 400; color: var(--text3); }
+
+    /* ── Sign-in screen ─────────────────────────────── */
+    .back-link {
+      font-size: 13px; color: var(--text2);
+      background: none; border: none;
+      cursor: pointer; font-family: inherit;
+      padding: 0; margin-bottom: 1.5rem;
+      text-align: left;
+    }
+    .back-link:hover { color: var(--text); }
+    .si-title {
+      font-size: 26px; font-weight: 700;
+      letter-spacing: -.02em; margin-bottom: .4rem;
+    }
+    .si-sub {
+      font-size: 14px; color: var(--text2);
+      line-height: 1.55; margin-bottom: 1.5rem;
+    }
+    .si-feat { display: flex; gap: 10px; align-items: flex-start; margin-bottom: .85rem; }
+    .si-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--text3); flex-shrink: 0; margin-top: 6px;
+    }
+    .si-ftxt { font-size: 14px; color: var(--text2); line-height: 1.4; }
+    .fi { margin-bottom: .9rem; }
+    .fi label { display: block; font-size: 12px; color: var(--text2); margin-bottom: .3rem; }
+    .fi input {
+      width: 100%; padding: 10px 12px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border2);
+      background: var(--bg);
+      font-size: 14px; font-family: inherit; color: var(--text);
+      outline: none;
+    }
+    .fi input:focus { border-color: var(--text2); }
+    .or-row {
+      display: flex; align-items: center; gap: 10px;
+      margin: 1rem 0;
+      font-size: 12px; color: var(--text3);
+    }
+    .or-row::before, .or-row::after {
+      content: ''; flex: 1;
+      height: 1px; background: var(--border);
+    }
+    .si-note {
+      font-size: 11.5px; color: var(--text3);
+      text-align: center; margin-top: .85rem; line-height: 1.5;
+    }
+    .si-error {
+      font-size: 13px; color: var(--red-tx);
+      background: var(--red-bg);
+      border-radius: var(--radius);
+      padding: .75rem 1rem;
+      margin-bottom: .85rem;
+      display: none;
+    }
+    .qcount { font-size: 13px; color: var(--text2); }
+
+    /* ── Loading state ──────────────────────────────── */
+    .loading-msg {
+      font-size: 14px; color: var(--text2);
+      text-align: center; padding: 2rem 0;
+    }
+
+    /* ── Animations ─────────────────────────────────── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+<div class="pg">
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- INTRO SCREEN                                    -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <div class="screen active" id="s-intro">
+    <div class="hdr">
+      <div class="logo">Pop<em>Guess</em></div>
+      <div id="intro-auth-el"></div>
+    </div>
+
+    <div class="intro-title">Test your<br>instincts.</div>
+    <div class="intro-sub">Each day, 5 real-world statistics — guess whether the true answer is higher or lower.</div>
+
+    <div class="how"><div class="hnum">1</div><div class="htxt">A statistic is shown with a key number hidden</div></div>
+    <div class="how"><div class="hnum">2</div><div class="htxt">Guess higher or lower than the number shown</div></div>
+    <div class="how"><div class="hnum">3</div><div class="htxt">See the real answer, then share your score</div></div>
+
+    <div style="height:1.25rem"></div>
+
+    <div class="daycard">
+      <div class="daycard-lbl">Today's game</div>
+      <div class="daycard-val" id="day-date-lbl">Loading…</div>
+    </div>
+
+    <div id="already-wrap" style="display:none">
+      <div class="already-card">
+        <div class="already-score" id="already-score-lbl"></div>
+        <div class="already-msg">You've already played today. Come back tomorrow!</div>
+      </div>
+    </div>
+
+    <button class="btn-primary" id="play-btn" onclick="startGame()">Play today's game</button>
+    <button class="btn-secondary" id="intro-si-btn" onclick="goSignIn('intro')">Sign in to sync your streak</button>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- GAME SCREEN                                     -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <div class="screen" id="s-game">
+    <div class="hdr">
+      <div class="logo">Pop<em>Guess</em></div>
+      <div class="qcount" id="qcnt">1 / 5</div>
+    </div>
+
+    <div class="progress"><div class="pf" id="pfill" style="width:0%"></div></div>
+
+    <div class="dots">
+      <div class="dot" id="d0"></div>
+      <div class="dot" id="d1"></div>
+      <div class="dot" id="d2"></div>
+      <div class="dot" id="d3"></div>
+      <div class="dot" id="d4"></div>
+    </div>
+
+    <div class="cat" id="qcat"></div>
+    <div class="qtext" id="qtext"></div>
+
+    <div class="tcard">
+      <div class="tlabel">Is the real answer higher or lower than</div>
+      <div class="tval" id="qthr"></div>
+    </div>
+
+    <div class="brow">
+      <button class="gbtn" id="bhi" onclick="guess('higher')">↑ Higher</button>
+      <button class="gbtn" id="blo" onclick="guess('lower')">↓ Lower</button>
+    </div>
+
+    <div class="revcard" id="rev">
+      <div class="revlabel">The actual answer</div>
+      <div class="revnum" id="revnum"></div>
+      <div class="revsrc" id="revsrc"></div>
+    </div>
+
+    <button class="nxtbtn" id="nxtbtn" onclick="nextQ()">Next question →</button>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- RESULTS SCREEN                                  -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <div class="screen" id="s-done">
+    <div class="hdr">
+      <div class="logo">Pop<em>Guess</em></div>
+      <div id="done-auth-el"></div>
+    </div>
+
+    <div class="cscore" id="cscore"></div>
+    <div class="cmsg" id="cmsg"></div>
+
+    <div class="stat-row">
+      <div class="stat-pill">
+        <div class="stat-num" id="streak-num">—</div>
+        <div class="stat-lbl">Streak</div>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-num" id="played-num">—</div>
+        <div class="stat-lbl">Played</div>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-num" id="avg-num">—</div>
+        <div class="stat-lbl">Avg score</div>
+      </div>
+    </div>
+
+    <div class="dist-section">
+      <div class="dist-title">Score distribution</div>
+      <div id="dist-chart"></div>
+    </div>
+
+    <div class="egrid" id="egrid"></div>
+    <div class="sharebox" id="sharebox"></div>
+    <button class="copybtn" id="copybtn" onclick="doCopy()">Copy results</button>
+
+    <div id="done-auth-cta"></div>
+
+    <div class="rev-section">
+      <div class="rev-hdr">Question review</div>
+      <div id="review"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- SIGN-IN SCREEN                                  -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <div class="screen" id="s-signin">
+    <button class="back-link" onclick="goBack()">← Back</button>
+    <div class="si-title">Sign in to<br>PopGuess</div>
+    <div class="si-sub">Save your streak and score history across all your devices.</div>
+
+    <div class="si-feat"><div class="si-dot"></div><div class="si-ftxt">Streak synced — never lose your progress</div></div>
+    <div class="si-feat"><div class="si-dot"></div><div class="si-ftxt">Full score history and distribution chart</div></div>
+    <div class="si-feat"><div class="si-dot"></div><div class="si-ftxt">Leaderboard with friends (coming soon)</div></div>
+
+    <div style="height:1rem"></div>
+
+    <div class="fi"><label>Email</label><input type="email" id="si-email" placeholder="you@example.com" /></div>
+    <div class="fi"><label>Password</label><input type="password" id="si-pw" placeholder="••••••••" /></div>
+
+    <div class="si-error" id="si-error"></div>
+
+    <button class="btn-primary" style="margin-top:.5rem" onclick="doSignIn()">Sign in / Create account</button>
+    <div class="or-row">or</div>
+    <button class="btn-secondary" onclick="doGoogleSignIn()">Continue with Google</button>
+    <div class="si-note">New here? Entering your email creates an account automatically.</div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- SCRIPT                                              -->
+<!-- ═══════════════════════════════════════════════════ -->
+<script>
+// ─────────────────────────────────────────────────────
+// PASTE YOUR SUPABASE CREDENTIALS HERE
+// Settings → API in your Supabase dashboard
+// ─────────────────────────────────────────────────────
+const SUPABASE_URL  = 'https://sjwbcmnjzuxhnxesvdjr.supabase.co'
+const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqd2JjbW5qenV4aG54ZXN2ZGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4ODQ1MTUsImV4cCI6MjA4OTQ2MDUxNX0.HFR3MRqg3xeaMJEPkCK7b_hhD8hkWFCsWAoipww_0jU'
+
+// ─────────────────────────────────────────────────────
+// Init Supabase (loaded from CDN above)
+// ─────────────────────────────────────────────────────
+const { createClient } = supabase
+const db = createClient(SUPABASE_URL, SUPABASE_KEY)
+
+// ─────────────────────────────────────────────────────
+// Fallback questions — used if Supabase has no rows
+// for today yet (so the game always works)
+// ─────────────────────────────────────────────────────
+const FALLBACK_QUESTIONS = [
+  { category:'Technology', question:'How many times does the average American check their phone each day?', threshold_display:'120 times', answer_display:'96 times', source:'Asurion Research, 2023', direction:'lower' },
+  { category:'Nature',     question:"What percentage of Earth's oceans remain unexplored by humans?",       threshold_display:'50%',         answer_display:'~80%',      source:'NOAA',                        direction:'higher' },
+  { category:'Culture',    question:'How many languages are actively spoken in Papua New Guinea?',          threshold_display:'600 languages',answer_display:'~840 languages', source:'Ethnologue',              direction:'higher' },
+  { category:'Earth',      question:"What percentage of the world's freshwater is locked in glaciers?",     threshold_display:'80%',         answer_display:'~69%',      source:'U.S. Geological Survey',      direction:'lower' },
+  { category:'Food',       question:'How many hot dogs (millions) are eaten in the US on Independence Day?',threshold_display:'75 million',  answer_display:'150 million',source:'National Hot Dog & Sausage Council', direction:'higher' },
+]
+
+// ─────────────────────────────────────────────────────
+// State
+// ─────────────────────────────────────────────────────
+let questions = []
+let ci = 0
+let results = []
+let guessed = false
+let siFrom = 'intro'
+let currentUser = null
+let finalScore = 0
+
+// ─────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────
+function todayKey() {
+  return new Date().toISOString().slice(0, 10)
+}
+function dayNum() {
+  return Math.floor((new Date() - new Date('2024-01-01')) / 86400000)
+}
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'))
+  document.getElementById(id).classList.add('active')
+}
+function playedToday() {
+  return localStorage.getItem('pg_last_played') === todayKey()
+}
+
+// ─────────────────────────────────────────────────────
+// Local storage stats (used for guests)
+// ─────────────────────────────────────────────────────
+function getLocalStats() {
+  return {
+    lastPlayed:  localStorage.getItem('pg_last_played') || '',
+    streak:      parseInt(localStorage.getItem('pg_streak') || '0'),
+    dist:        JSON.parse(localStorage.getItem('pg_score_dist') || '[0,0,0,0,0,0]'),
+    plays:       parseInt(localStorage.getItem('pg_plays') || '0'),
+    totalScore:  parseInt(localStorage.getItem('pg_total_score') || '0'),
+    lastScore:   parseInt(localStorage.getItem('pg_last_score') || '0')
+  }
+}
+
+function saveLocalStats(score) {
+  const s = getLocalStats()
+  const today = todayKey()
+  const yesterday = new Date()
+  yesterday.setDate(yesterday.getDate() - 1)
+  const yKey = yesterday.toISOString().slice(0, 10)
+
+  let newStreak
+  if (s.lastPlayed === yKey)    newStreak = s.streak + 1
+  else if (s.lastPlayed===today) newStreak = s.streak
+  else                           newStreak = 1
+
+  const dist = s.dist
+  dist[score]++
+
+  localStorage.setItem('pg_last_played', today)
+  localStorage.setItem('pg_streak', newStreak)
+  localStorage.setItem('pg_score_dist', JSON.stringify(dist))
+  localStorage.setItem('pg_plays', s.plays + 1)
+  localStorage.setItem('pg_total_score', s.totalScore + score)
+  localStorage.setItem('pg_last_score', score)
+  return newStreak
+}
+
+// ─────────────────────────────────────────────────────
+// Supabase: fetch today's questions
+// ─────────────────────────────────────────────────────
+async function fetchTodaysQuestions() {
+  const today = todayKey()
+  const { data, error } = await db
+    .from('questions')
+    .select('*')
+    .eq('play_date', today)
+    .order('sort_order', { ascending: true })
+
+  if (error || !data || data.length === 0) {
+    console.warn('No questions in DB for today, using fallback.')
+    return FALLBACK_QUESTIONS
+  }
+  return data
+}
+
+// ─────────────────────────────────────────────────────
+// Supabase: save a completed play
+// ─────────────────────────────────────────────────────
+async function savePlayToSupabase(score, answers) {
+  if (!currentUser) return
+  const { error } = await db.from('plays').upsert(
+    { user_id: currentUser.id, play_date: todayKey(), score, answers },
+    { onConflict: 'user_id,play_date' }
+  )
+  if (error) console.error('Could not save play:', error.message)
+}
+
+// ─────────────────────────────────────────────────────
+// Supabase: load full stats for signed-in user
+// ─────────────────────────────────────────────────────
+async function loadSupabaseStats() {
+  if (!currentUser) return null
+
+  const { data: plays, error } = await db
+    .from('plays')
+    .select('play_date, score')
+    .eq('user_id', currentUser.id)
+    .order('play_date', { ascending: false })
+
+  if (error || !plays) return null
+
+  const dist = [0, 0, 0, 0, 0, 0]
+  plays.forEach(p => dist[p.score]++)
+
+  // Streak: walk backwards from today through consecutive days
+  let streak = 0
+  for (let i = 0; i < plays.length; i++) {
+    const expected = new Date()
+    expected.setDate(expected.getDate() - i)
+    const expectedKey = expected.toISOString().slice(0, 10)
+    if (plays[i].play_date === expectedKey) streak++
+    else break
+  }
+
+  const totalScore = plays.reduce((sum, p) => sum + p.score, 0)
+  return {
+    dist,
+    streak,
+    plays: plays.length,
+    avg: plays.length > 0 ? (totalScore / plays.length).toFixed(1) : '—'
+  }
+}
+
+// ─────────────────────────────────────────────────────
+// Auth
+// ─────────────────────────────────────────────────────
+function goSignIn(from) {
+  siFrom = from
+  document.getElementById('si-error').style.display = 'none'
+  show('s-signin')
+}
+
+function goBack() {
+  show('s-' + siFrom)
+  if (siFrom === 'intro') initIntro()
+  if (siFrom === 'done')  renderDoneAuth()
+}
+
+async function doSignIn() {
+  const email = document.getElementById('si-email').value.trim()
+  const pw    = document.getElementById('si-pw').value
+
+  const errEl = document.getElementById('si-error')
+  errEl.style.display = 'none'
+
+  if (!email) {
+    errEl.textContent = 'Please enter your email address.'
+    errEl.style.display = 'block'
+    return
+  }
+
+  // Try signing in first; if that fails, sign up
+  let { data, error } = await db.auth.signInWithPassword({ email, password: pw })
+
+  if (error && error.message.includes('Invalid login')) {
+    // Account doesn't exist — create it
+    const res = await db.auth.signUp({ email, password: pw })
+    data = res.data
+    error = res.error
+  }
+
+  if (error) {
+    errEl.textContent = error.message
+    errEl.style.display = 'block'
+    return
+  }
+
+  currentUser = data.user
+  goBack()
+}
+
+async function doGoogleSignIn() {
+  const { error } = await db.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.origin }
+  })
+  if (error) console.error(error.message)
+}
+
+async function signOut() {
+  await db.auth.signOut()
+  currentUser = null
+  initIntro()
+}
+
+// ─────────────────────────────────────────────────────
+// Intro screen setup
+// ─────────────────────────────────────────────────────
+function initIntro() {
+  const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+  document.getElementById('day-date-lbl').textContent = `5 questions · ${today}`
+
+  const authEl = document.getElementById('intro-auth-el')
+  const siBtn  = document.getElementById('intro-si-btn')
+
+  if (currentUser) {
+    const label = currentUser.email.split('@')[0]
+    authEl.innerHTML = `<button class="user-chip" onclick="signOut()">${label} · Sign out</button>`
+    siBtn.style.display = 'none'
+  } else {
+    authEl.innerHTML = ''
+    siBtn.style.display = 'block'
+  }
+
+  const playBtn = document.getElementById('play-btn')
+  if (playedToday()) {
+    const lastScore = getLocalStats().lastScore
+    playBtn.disabled = true
+    playBtn.textContent = 'Come back tomorrow'
+    document.getElementById('already-wrap').style.display = 'block'
+    document.getElementById('already-score-lbl').textContent = `${lastScore}/5`
+  } else {
+    playBtn.disabled = false
+    playBtn.textContent = "Play today's game"
+    document.getElementById('already-wrap').style.display = 'none'
+  }
+}
+
+// ─────────────────────────────────────────────────────
+// Game flow
+// ─────────────────────────────────────────────────────
+async function startGame() {
+  if (playedToday()) return
+  ci = 0; results = []; guessed = false
+
+  questions = await fetchTodaysQuestions()
+  loadQ(0)
+  show('s-game')
+}
+
+function loadQ(i) {
+  const q = questions[i]
+  guessed = false
+
+  document.getElementById('qcnt').textContent = `${i + 1} / 5`
+  document.getElementById('qcat').textContent = q.category
+  document.getElementById('qtext').textContent = q.question
+  document.getElementById('qthr').textContent = q.threshold_display
+  document.getElementById('pfill').style.width = `${(i / 5) * 100}%`
+
+  const bh = document.getElementById('bhi')
+  const bl = document.getElementById('blo')
+  bh.className = 'gbtn'; bl.className = 'gbtn'
+  bh.disabled = false;   bl.disabled = false
+
+  document.getElementById('rev').classList.remove('show')
+  document.getElementById('nxtbtn').classList.remove('show')
+}
+
+function guess(dir) {
+  if (guessed) return
+  guessed = true
+
+  const q   = questions[ci]
+  const ok  = dir === q.direction
+  results.push(ok)
+
+  const bh = document.getElementById('bhi')
+  const bl = document.getElementById('blo')
+  const chosen  = dir === 'higher' ? bh : bl
+  const other   = dir === 'higher' ? bl : bh
+  const correctBtn = q.direction === 'higher' ? bh : bl
+
+  chosen.disabled = true; other.disabled = true
+
+  if (ok) {
+    chosen.classList.add('ok')
+    other.classList.add('dim')
+  } else {
+    chosen.classList.add('no')
+    correctBtn.classList.add('ok')
+    other.classList.add('dim')
+  }
+
+  document.getElementById(`d${ci}`).classList.add(ok ? 'ok' : 'no')
+  document.getElementById('revnum').textContent = q.answer_display
+  document.getElementById('revsrc').textContent = 'Source: ' + q.source
+  document.getElementById('rev').classList.add('show')
+
+  const nb = document.getElementById('nxtbtn')
+  nb.textContent = ci < 4 ? 'Next question →' : 'See my results →'
+  nb.classList.add('show')
+}
+
+function nextQ() {
+  if (ci < 4) { ci++; loadQ(ci) } else { done() }
+}
+
+// ─────────────────────────────────────────────────────
+// Done / results screen
+// ─────────────────────────────────────────────────────
+async function done() {
+  finalScore = results.filter(Boolean).length
+
+  // Save locally for guests, or to Supabase for signed-in users
+  const localStreak = saveLocalStats(finalScore)
+  await savePlayToSupabase(finalScore, results)
+
+  // Decide which stats to show
+  let stats
+  if (currentUser) {
+    stats = await loadSupabaseStats()
+  }
+  if (!stats) {
+    const s = getLocalStats()
+    stats = {
+      streak: localStreak,
+      plays: s.plays,
+      avg: s.plays > 0 ? (s.totalScore / s.plays).toFixed(1) : finalScore.toFixed(1),
+      dist: s.dist
+    }
+  }
+
+  // Render score + message
+  document.getElementById('pfill').style.width = '100%'
+  document.getElementById('cscore').textContent = `${finalScore}/5`
+  const msgs = [
+    'Tough one — the world is full of surprises.',
+    'Keep going — your instincts will sharpen.',
+    "Not bad! You're getting there.",
+    'Good work — solid instincts.',
+    'Nice! You\'ve got a sharp eye.',
+    'Perfect score! You know your numbers.'
+  ]
+  document.getElementById('cmsg').textContent = msgs[finalScore]
+
+  // Stat pills
+  document.getElementById('streak-num').textContent = stats.streak
+  document.getElementById('played-num').textContent = stats.plays
+  document.getElementById('avg-num').textContent    = stats.avg
+
+  // Distribution chart
+  renderDist(stats.dist, finalScore)
+
+  // Emoji row
+  const eg = document.getElementById('egrid')
+  eg.innerHTML = ''
+  results.forEach(r => {
+    const b = document.createElement('div')
+    b.className = 'eblock ' + (r ? 'ok' : 'no')
+    eg.appendChild(b)
+  })
+
+  // Share text
+  const emo = results.map(r => r ? '🟩' : '🟥').join('')
+  document.getElementById('sharebox').textContent =
+    `PopGuess #${dayNum()}\n${finalScore}/5  🔥 ${stats.streak}-day streak\n\n${emo}\n\npopguess.io`
+
+  // Auth CTA + done-header user chip
+  renderDoneAuth()
+  const doneAuthEl = document.getElementById('done-auth-el')
+  if (currentUser) {
+    const label = currentUser.email.split('@')[0]
+    doneAuthEl.innerHTML = `<button class="user-chip" onclick="signOut()">${label} · Sign out</button>`
+  } else {
+    doneAuthEl.innerHTML = ''
+  }
+
+  // Question review
+  const rv = document.getElementById('review')
+  rv.innerHTML = ''
+  questions.forEach((q, i) => {
+    const ok = results[i]
+    const d  = document.createElement('div')
+    d.className = 'ritem'
+    d.innerHTML = `
+      <div class="rico ${ok ? 'ok' : 'no'}"></div>
+      <div>
+        <div class="rq">${q.question}</div>
+        <div class="ra">${q.answer_display} <span class="rsrc">(${q.source})</span></div>
+      </div>`
+    rv.appendChild(d)
+  })
+
+  show('s-done')
+}
+
+function renderDist(dist, curr) {
+  const max = Math.max(...dist, 1)
+  let html = ''
+  dist.forEach((v, i) => {
+    const pct    = v === 0 ? 0 : Math.max(Math.round((v / max) * 100), 5)
+    const isCurr = i === curr
+    html += `
+      <div class="dist-row">
+        <div class="dist-label">${i}</div>
+        <div class="dist-bar-wrap">
+          <div class="dist-bar${isCurr ? ' curr' : ''}" style="width:${pct}%"></div>
+        </div>
+        <div class="dist-count">${v}</div>
+      </div>`
+  })
+  document.getElementById('dist-chart').innerHTML = html
+}
+
+function renderDoneAuth() {
+  const el = document.getElementById('done-auth-cta')
+  if (currentUser) {
+    el.innerHTML = `
+      <div class="synced-badge">
+        <div class="synced-dot"></div>
+        Stats synced to ${currentUser.email}
+      </div>`
+  } else {
+    el.innerHTML = `
+      <div class="signin-cta" onclick="goSignIn('done')">
+        <div class="cta-ico">↗</div>
+        <div style="flex:1">
+          <div class="cta-title">Sign in to sync your stats</div>
+          <div class="cta-sub">Keep your streak and history across devices</div>
+        </div>
+      </div>`
+  }
+}
+
+// ─────────────────────────────────────────────────────
+// Share / copy
+// ─────────────────────────────────────────────────────
+function doCopy() {
+  navigator.clipboard.writeText(document.getElementById('sharebox').textContent).then(() => {
+    const b = document.getElementById('copybtn')
+    b.textContent = 'Copied!'
+    setTimeout(() => b.textContent = 'Copy results', 2000)
+  })
+}
+
+// ─────────────────────────────────────────────────────
+// Boot — check for existing Supabase session
+// ─────────────────────────────────────────────────────
+async function boot() {
+  // Restore session if user was previously signed in
+  const { data: { session } } = await db.auth.getSession()
+  if (session) currentUser = session.user
+
+  // Keep currentUser in sync on any auth changes (e.g. Google redirect)
+  db.auth.onAuthStateChange((_event, session) => {
+    currentUser = session?.user ?? null
+    initIntro()
+  })
+
+  initIntro()
+}
+
+boot()
+</script>
+</body>
+</html>
