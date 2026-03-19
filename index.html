@@ -971,11 +971,22 @@ async function showStats() {
     doneAuthEl.innerHTML = ''
   }
 
-  // Rebuild question review using today's questions + saved answers
+  // Always fetch today's questions fresh so review always works
   const rv = document.getElementById('review')
   rv.innerHTML = ''
-  if (questions.length > 0 && lastAnswers.length > 0) {
-    questions.forEach((q, i) => {
+
+  const { data: qs, error: qErr } = await db
+    .from('questions')
+    .select('*')
+    .eq('play_date', todayKey())
+    .order('sort_order', { ascending: true })
+
+  if (qErr || !qs || qs.length === 0) {
+    rv.innerHTML = '<div style="font-size:13px;color:var(--text2);padding:.5rem 0">Question review unavailable.</div>'
+  } else if (lastAnswers.length === 0) {
+    rv.innerHTML = '<div style="font-size:13px;color:var(--text2);padding:.5rem 0">Play a game first to see your review.</div>'
+  } else {
+    qs.forEach((q, i) => {
       const ok = lastAnswers[i]
       const d  = document.createElement('div')
       d.className = 'ritem'
@@ -987,28 +998,6 @@ async function showStats() {
         </div>`
       rv.appendChild(d)
     })
-  } else {
-    // questions not in memory (page was refreshed) — fetch them
-    const { data: qs } = await db
-      .from('questions')
-      .select('*')
-      .eq('play_date', todayKey())
-      .order('sort_order', { ascending: true })
-
-    if (qs && lastAnswers.length > 0) {
-      qs.forEach((q, i) => {
-        const ok = lastAnswers[i]
-        const d  = document.createElement('div')
-        d.className = 'ritem'
-        d.innerHTML = `
-          <div class="rico ${ok ? 'ok' : 'no'}"></div>
-          <div>
-            <div class="rq">${q.question}</div>
-            <div class="ra">${q.answer_display} <span class="rsrc">(${q.source})</span></div>
-          </div>`
-        rv.appendChild(d)
-      })
-    }
   }
 
   // Add back button to header if not already there
