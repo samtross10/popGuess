@@ -844,12 +844,15 @@ async function doSignIn() {
   btn.disabled = false
 
   if (signUpError) {
-    if (signUpError.message.toLowerCase().includes('already registered')) {
-      errEl.textContent = 'Wrong password for this email. Try again.'
+    if (signUpError.message.toLowerCase().includes('already registered') ||
+        signUpError.message.toLowerCase().includes('already exists')) {
+      errEl.textContent = 'Wrong password. Try again.'
     } else {
       errEl.textContent = signUpError.message
     }
     errEl.style.display = 'block'
+    btn.textContent = 'Sign in / Create account'
+    btn.disabled = false
     return
   }
 
