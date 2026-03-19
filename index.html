@@ -665,7 +665,9 @@ function todayKey() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 function dayNum() {
-  return Math.floor((new Date() - new Date('2024-01-01')) / 86400000)
+  const d = new Date()
+  const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  return Math.floor((new Date(today) - new Date('2026-03-18')) / 86400000) + 1
 }
 function show(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'))
