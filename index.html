@@ -799,9 +799,10 @@ function goBack() {
 
 async function doSignIn() {
   const email = document.getElementById('si-email').value.trim()
-  const pw    = document.getElementById('si-pw').value
-
+  const pw    = document.getElementById('si-pw').value.trim()
   const errEl = document.getElementById('si-error')
+  const btn   = document.querySelector('#s-signin .btn-primary')
+
   errEl.style.display = 'none'
 
   if (!email) {
@@ -809,24 +810,63 @@ async function doSignIn() {
     errEl.style.display = 'block'
     return
   }
-
-  // Try signing in first; if that fails, sign up
-  let { data, error } = await db.auth.signInWithPassword({ email, password: pw })
-
-  if (error && error.message.includes('Invalid login')) {
-    // Account doesn't exist — create it
-    const res = await db.auth.signUp({ email, password: pw })
-    data = res.data
-    error = res.error
-  }
-
-  if (error) {
-    errEl.textContent = error.message
+  if (!pw || pw.length < 6) {
+    errEl.textContent = 'Password must be at least 6 characters.'
     errEl.style.display = 'block'
     return
   }
 
-  currentUser = data.user
+  btn.textContent = 'Signing in…'
+  btn.disabled = true
+
+  // Try signing in first
+  const { data: signInData, error: signInError } =
+    await db.auth.signInWithPassword({ email, password: pw })
+
+  if (!signInError) {
+    // Success — signed in to existing account
+    currentUser = signInData.user
+    btn.textContent = 'Sign in / Create account'
+    btn.disabled = false
+    goBack()
+    return
+  }
+
+  // Wrong password — stop here, don't auto-create
+  if (signInError.message.toLowerCase().includes('invalid login credentials') ||
+      signInError.message.toLowerCase().includes('invalid login')) {
+    errEl.textContent = 'Wrong password. Try again, or use a different email to create a new account.'
+    errEl.style.display = 'block'
+    btn.textContent = 'Sign in / Create account'
+    btn.disabled = false
+    return
+  }
+
+  // Email not found — create a new account
+  const { data: signUpData, error: signUpError } =
+    await db.auth.signUp({ email, password: pw })
+
+  btn.textContent = 'Sign in / Create account'
+  btn.disabled = false
+
+  if (signUpError) {
+    errEl.textContent = signUpError.message
+    errEl.style.display = 'block'
+    return
+  }
+
+  // Supabase sends a confirmation email by default.
+  // If email confirmation is ON, tell them to check their inbox.
+  // If it's OFF (disabled in Supabase dashboard), they're logged in immediately.
+  if (signUpData.user && !signUpData.session) {
+    errEl.style.display = 'block'
+    errEl.style.background = 'var(--green-bg)'
+    errEl.style.color = 'var(--green-tx)'
+    errEl.textContent = 'Account created! Check your email to confirm, then sign in.'
+    return
+  }
+
+  currentUser = signUpData.user
   goBack()
 }
 
