@@ -499,7 +499,7 @@
         <div class="already-score" id="already-score-lbl"></div>
         <div class="already-msg">You've already played today. Come back tomorrow!</div>
       </div>
-      <button class="btn-secondary" onclick="showStats()">View my stats</button>
+      <button class="btn-secondary" style="margin-top:.75rem" onclick="showStats()">View my stats</button>
     </div>
 
     <button class="btn-primary" id="play-btn" onclick="startGame()">Play today's game</button>
@@ -804,6 +804,8 @@ async function doSignIn() {
   const btn   = document.querySelector('#s-signin .btn-primary')
 
   errEl.style.display = 'none'
+  errEl.style.background = 'var(--red-bg)'
+  errEl.style.color = 'var(--red-tx)'
 
   if (!email) {
     errEl.textContent = 'Please enter your email address.'
@@ -819,55 +821,50 @@ async function doSignIn() {
   btn.textContent = 'Signing in…'
   btn.disabled = true
 
-  // Try signing in first
-  const { data: signInData, error: signInError } =
-    await db.auth.signInWithPassword({ email, password: pw })
+  const { data, error } = await db.auth.signInWithPassword({ email, password: pw })
 
-  if (!signInError) {
-    // Success — signed in to existing account
-    currentUser = signInData.user
+  if (!error) {
+    currentUser = data.user
     btn.textContent = 'Sign in / Create account'
     btn.disabled = false
     goBack()
     return
   }
 
-  // Wrong password — stop here, don't auto-create
-  if (signInError.message.toLowerCase().includes('invalid login credentials') ||
-      signInError.message.toLowerCase().includes('invalid login')) {
-    errEl.textContent = 'Wrong password. Try again, or use a different email to create a new account.'
-    errEl.style.display = 'block'
-    btn.textContent = 'Sign in / Create account'
-    btn.disabled = false
-    return
-  }
+  // Only create account if the error is specifically "user not found"
+  // not "wrong password"
+  const msg = error.message.toLowerCase()
+  const isNotFound = msg.includes('user not found') || msg.includes('no user found') || msg.includes('invalid login credentials')
 
-  // Email not found — create a new account
-  const { data: signUpData, error: signUpError } =
-    await db.auth.signUp({ email, password: pw })
+  // To distinguish wrong password vs no account, try fetching the user
+  // by attempting signup and checking if it says "already registered"
+  const { data: signUpData, error: signUpError } = await db.auth.signUp({ email, password: pw })
 
   btn.textContent = 'Sign in / Create account'
   btn.disabled = false
 
   if (signUpError) {
-    errEl.textContent = signUpError.message
+    if (signUpError.message.toLowerCase().includes('already registered')) {
+      errEl.textContent = 'Wrong password for this email. Try again.'
+    } else {
+      errEl.textContent = signUpError.message
+    }
     errEl.style.display = 'block'
     return
   }
 
-  // Supabase sends a confirmation email by default.
-  // If email confirmation is ON, tell them to check their inbox.
-  // If it's OFF (disabled in Supabase dashboard), they're logged in immediately.
+  if (signUpData.user && signUpData.session) {
+    currentUser = signUpData.user
+    goBack()
+    return
+  }
+
   if (signUpData.user && !signUpData.session) {
-    errEl.style.display = 'block'
     errEl.style.background = 'var(--green-bg)'
     errEl.style.color = 'var(--green-tx)'
     errEl.textContent = 'Account created! Check your email to confirm, then sign in.'
-    return
+    errEl.style.display = 'block'
   }
-
-  currentUser = signUpData.user
-  goBack()
 }
 
 async function doGoogleSignIn() {
