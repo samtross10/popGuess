@@ -692,7 +692,7 @@ function getLocalStats() {
   }
 }
 
-function saveLocalStats(score) {
+function saveLocalStats(score, answers = []) {
   const s = getLocalStats()
   const today = todayKey()
   const yesterday = new Date()
@@ -700,9 +700,9 @@ function saveLocalStats(score) {
   const yKey = yesterday.toISOString().slice(0, 10)
 
   let newStreak
-  if (s.lastPlayed === yKey)    newStreak = s.streak + 1
-  else if (s.lastPlayed===today) newStreak = s.streak
-  else                           newStreak = 1
+  if (s.lastPlayed === yKey)     newStreak = s.streak + 1
+  else if (s.lastPlayed === today) newStreak = s.streak
+  else                             newStreak = 1
 
   const dist = s.dist
   dist[score]++
@@ -713,6 +713,7 @@ function saveLocalStats(score) {
   localStorage.setItem('pg_plays', s.plays + 1)
   localStorage.setItem('pg_total_score', s.totalScore + score)
   localStorage.setItem('pg_last_score', score)
+  localStorage.setItem('pg_last_answers', JSON.stringify(answers))
   return newStreak
 }
 
@@ -741,7 +742,7 @@ async function savePlayToSupabase(score, answers) {
   if (!currentUser) return
   const { error } = await db.from('plays').upsert(
     { user_id: currentUser.id, play_date: todayKey(), score, answers },
-    { onConflict: 'user_id,play_date' }
+    { onConflict: 'user_id,play_date', ignoreDuplicates: true }
   )
   if (error) console.error('Could not save play:', error.message)
 }
@@ -932,22 +933,33 @@ async function showStats() {
     }
   }
 
-  document.getElementById('cscore').textContent = `${getLocalStats().lastScore}/5`
+  const s = getLocalStats()
+  const lastScore   = s.lastScore
+  const lastAnswers = JSON.parse(localStorage.getItem('pg_last_answers') || '[]')
+
+  document.getElementById('cscore').textContent = `${lastScore}/5`
   document.getElementById('cmsg').textContent = 'Come back tomorrow for the next game.'
   document.getElementById('streak-num').textContent = stats.streak
   document.getElementById('played-num').textContent = stats.plays
-  document.getElementById('avg-num').textContent = stats.avg
+  document.getElementById('avg-num').textContent    = stats.avg
 
-  renderDist(stats.dist, getLocalStats().lastScore)
+  renderDist(stats.dist, lastScore)
 
-  // Rebuild emoji row from last saved answers if available
+  // Rebuild emoji grid from saved answers
   const eg = document.getElementById('egrid')
   eg.innerHTML = ''
+  lastAnswers.forEach(r => {
+    const b = document.createElement('div')
+    b.className = 'eblock ' + (r ? 'ok' : 'no')
+    eg.appendChild(b)
+  })
 
-  // Share text using saved data
-  const s = getLocalStats()
+  // Share text
+  const emo = lastAnswers.length
+    ? lastAnswers.map(r => r ? '🟩' : '🟥').join('')
+    : ''
   document.getElementById('sharebox').textContent =
-    `PopGuess #${dayNum()}\n${s.lastScore}/5  🔥 ${stats.streak}-day streak\n\npopguess.io`
+    `PopGuess #${dayNum()}\n${lastScore}/5  🔥 ${stats.streak}-day streak\n\n${emo}\n\npopguess.io`
 
   renderDoneAuth()
 
@@ -959,10 +971,47 @@ async function showStats() {
     doneAuthEl.innerHTML = ''
   }
 
-  // Hide the question review section since we don't have this session's answers
-  document.getElementById('review').innerHTML = ''
+  // Rebuild question review using today's questions + saved answers
+  const rv = document.getElementById('review')
+  rv.innerHTML = ''
+  if (questions.length > 0 && lastAnswers.length > 0) {
+    questions.forEach((q, i) => {
+      const ok = lastAnswers[i]
+      const d  = document.createElement('div')
+      d.className = 'ritem'
+      d.innerHTML = `
+        <div class="rico ${ok ? 'ok' : 'no'}"></div>
+        <div>
+          <div class="rq">${q.question}</div>
+          <div class="ra">${q.answer_display} <span class="rsrc">(${q.source})</span></div>
+        </div>`
+      rv.appendChild(d)
+    })
+  } else {
+    // questions not in memory (page was refreshed) — fetch them
+    const { data: qs } = await db
+      .from('questions')
+      .select('*')
+      .eq('play_date', todayKey())
+      .order('sort_order', { ascending: true })
 
-  // Add a back button at the top
+    if (qs && lastAnswers.length > 0) {
+      qs.forEach((q, i) => {
+        const ok = lastAnswers[i]
+        const d  = document.createElement('div')
+        d.className = 'ritem'
+        d.innerHTML = `
+          <div class="rico ${ok ? 'ok' : 'no'}"></div>
+          <div>
+            <div class="rq">${q.question}</div>
+            <div class="ra">${q.answer_display} <span class="rsrc">(${q.source})</span></div>
+          </div>`
+        rv.appendChild(d)
+      })
+    }
+  }
+
+  // Add back button to header if not already there
   const hdr = document.querySelector('#s-done .hdr')
   if (!hdr.querySelector('.back-to-home')) {
     const backBtn = document.createElement('button')
@@ -1052,7 +1101,7 @@ async function done() {
   finalScore = results.filter(Boolean).length
 
   // Save locally for guests, or to Supabase for signed-in users
-  const localStreak = saveLocalStats(finalScore)
+  const localStreak = saveLocalStats(finalScore, results)
   await savePlayToSupabase(finalScore, results)
 
   // Decide which stats to show
