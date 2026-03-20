@@ -639,7 +639,13 @@ const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 // Init Supabase (loaded from CDN above)
 // ─────────────────────────────────────────────────────
 const { createClient } = supabase
-const db = createClient(SUPABASE_URL, SUPABASE_KEY)
+const db = createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: {
+    detectSessionInUrl: true,
+    autoRefreshToken: true,
+    persistSession: true
+  }
+})
 
 // ─────────────────────────────────────────────────────
 // Fallback questions — used if Supabase has no rows
@@ -1334,13 +1340,34 @@ function doCopy() {
 // Boot — check for existing Supabase session
 // ─────────────────────────────────────────────────────
 async function boot() {
-  const { data: { session } } = await db.auth.getSession()
-  if (session) currentUser = session.user
+  // Show loading while we check auth state
+  document.getElementById('play-btn').textContent = 'Loading…'
+  document.getElementById('play-btn').disabled = true
 
-  db.auth.onAuthStateChange((_event, session) => {
+  // onAuthStateChange fires for BOTH normal sessions AND
+  // OAuth redirects — it must be set up before getSession()
+  db.auth.onAuthStateChange(async (event, session) => {
+    console.log('auth event:', event, session?.user?.email)
     currentUser = session?.user ?? null
-    initIntro()
+
+    if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') {
+      await initIntro()
+    }
+    if (event === 'SIGNED_OUT') {
+      await initIntro()
+    }
   })
+
+  // This picks up the session from the URL hash after OAuth redirect
+  const { data: { session } } = await db.auth.getSession()
+  if (session) {
+    currentUser = session.user
+  }
+
+  // Clean up the URL after OAuth redirect
+  if (window.location.hash.includes('access_token')) {
+    window.history.replaceState({}, document.title, window.location.pathname)
+  }
 
   await initIntro()
 }
