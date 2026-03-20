@@ -894,8 +894,14 @@ async function doGoogleSignIn() {
 }
 
 async function signOut() {
-  await db.auth.signOut()
-  // onAuthStateChange fires SIGNED_OUT automatically — no need to do anything else here
+  const { error } = await db.auth.signOut()
+  if (error) console.error('Sign out error:', error.message)
+  // onAuthStateChange will fire SIGNED_OUT and call initIntro()
+  // but if we're on the done screen we need to update that too
+  currentUser = null
+  renderDoneAuth()
+  const doneAuthEl = document.getElementById('done-auth-el')
+  doneAuthEl.innerHTML = ''
 }
 
 // ─────────────────────────────────────────────────────
@@ -911,7 +917,8 @@ async function initIntro() {
 
   if (currentUser) {
     const label = currentUser.email.split('@')[0]
-    authEl.innerHTML = `<button class="user-chip" onclick="signOut()">${label} · Sign out</button>`
+    authEl.innerHTML = `<button class="user-chip" id="intro-signout-btn">${label} · Sign out</button>`
+    document.getElementById('intro-signout-btn').addEventListener('click', signOut)
     siBtn.style.display = 'none'
   } else {
     authEl.innerHTML = ''
@@ -1024,7 +1031,8 @@ async function showStats() {
   const doneAuthEl = document.getElementById('done-auth-el')
   if (currentUser) {
     const label = currentUser.email.split('@')[0]
-    doneAuthEl.innerHTML = `<button class="user-chip" onclick="signOut()">${label} · Sign out</button>`
+    doneAuthEl.innerHTML = `<button class="user-chip" id="done-signout-btn">${label} · Sign out</button>`
+    document.getElementById('done-signout-btn').addEventListener('click', signOut)
   } else {
     doneAuthEl.innerHTML = ''
   }
@@ -1262,7 +1270,8 @@ async function done() {
   const doneAuthEl = document.getElementById('done-auth-el')
   if (currentUser) {
     const label = currentUser.email.split('@')[0]
-    doneAuthEl.innerHTML = `<button class="user-chip" onclick="signOut()">${label} · Sign out</button>`
+    doneAuthEl.innerHTML = `<button class="user-chip" id="done-signout-btn">${label} · Sign out</button>`
+    document.getElementById('done-signout-btn').addEventListener('click', signOut)
   } else {
     doneAuthEl.innerHTML = ''
   }
@@ -1346,15 +1355,28 @@ async function boot() {
     console.log('auth event:', event, session?.user?.email ?? 'no user')
     currentUser = session?.user ?? null
 
-    // Clean up the ugly hash from the URL after Google OAuth redirect
     if (window.location.hash.includes('access_token')) {
       window.history.replaceState({}, document.title, window.location.pathname)
     }
 
-    // Always re-render the intro screen on any auth change
+    // Always update intro screen
     await initIntro()
 
-    // If the user just signed in and the sign-in screen is showing, go back
+    // Also update done screen if it's visible
+    const doneScreen = document.getElementById('s-done')
+    if (doneScreen.classList.contains('active')) {
+      renderDoneAuth()
+      const doneAuthEl = document.getElementById('done-auth-el')
+      if (currentUser) {
+        const label = currentUser.email.split('@')[0]
+        doneAuthEl.innerHTML = `<button class="user-chip" id="done-signout-btn">${label} · Sign out</button>`
+        document.getElementById('done-signout-btn').addEventListener('click', signOut)
+      } else {
+        doneAuthEl.innerHTML = ''
+      }
+    }
+
+    // If just signed in while on sign-in screen, go back
     if (event === 'SIGNED_IN' && document.getElementById('s-signin').classList.contains('active')) {
       goBack()
     }
