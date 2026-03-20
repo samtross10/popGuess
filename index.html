@@ -987,7 +987,7 @@ async function showStats() {
     const el = document.getElementById('peer-msg')
     if (!result) { el.textContent = ''; return }
     const { pct, total } = result
-    el.textContent = `Along with ${pct}% of the ${total.toLocaleString()} player${total === 1 ? '' : 's'} today`
+    el.textContent = `${pct}% of ${total.toLocaleString()} player${total === 1 ? '' : 's'} scored ${lastScore}/5 today`
   })
 
   document.getElementById('streak-num').textContent = stats.streak
@@ -1225,7 +1225,7 @@ async function done() {
     const el = document.getElementById('peer-msg')
     if (!result) { el.textContent = ''; return }
     const { pct, total } = result
-    el.textContent = `Along with ${pct}% of the ${total.toLocaleString()} player${total === 1 ? '' : 's'} today`
+    el.textContent = `${pct}% of ${total.toLocaleString()} player${total === 1 ? '' : 's'} scored ${finalScore}/5 today`
   })
 
   // Stat pills
