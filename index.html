@@ -491,7 +491,7 @@
     <div style="height:1.25rem"></div>
 
     <div class="daycard">
-      <div class="daycard-lbl">Today's game</div>
+      <div class="daycard-lbl" id="day-game-lbl">Today's game</div>
       <div class="daycard-val" id="day-date-lbl">Loading…</div>
     </div>
 
@@ -887,7 +887,8 @@ async function signOut() {
 // ─────────────────────────────────────────────────────
 function initIntro() {
   const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-  document.getElementById('day-date-lbl').textContent = `#${dayNum()} · 5 questions · ${today}`
+  document.getElementById('day-date-lbl').textContent = `5 questions · ${today}`
+  document.getElementById('day-game-lbl').textContent = `Today's game · #${dayNum()}`
 
   const authEl = document.getElementById('intro-auth-el')
   const siBtn  = document.getElementById('intro-si-btn')
