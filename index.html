@@ -624,20 +624,16 @@
 
 </div>
 
-<!-- ═══════════════════════════════════════════════════ -->
-<!-- SCRIPT                                              -->
-<!-- ═══════════════════════════════════════════════════ -->
 <script>
-// ─────────────────────────────────────────────────────
-// PASTE YOUR SUPABASE CREDENTIALS HERE
-// Settings → API in your Supabase dashboard
-// ─────────────────────────────────────────────────────
-const SUPABASE_URL  = 'https://sjwbcmnjzuxhnxesvdjr.supabase.co'
-const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqd2JjbW5qenV4aG54ZXN2ZGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4ODQ1MTUsImV4cCI6MjA4OTQ2MDUxNX0.HFR3MRqg3xeaMJEPkCK7b_hhD8hkWFCsWAoipww_0jU'
+// ═══════════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════════
+const SUPABASE_URL = 'https://sjwbcmnjzuxhnxesvdjr.supabase.co'
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqd2JjbW5qenV4aG54ZXN2ZGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4ODQ1MTUsImV4cCI6MjA4OTQ2MDUxNX0.HFR3MRqg3xeaMJEPkCK7b_hhD8hkWFCsWAoipww_0jU'
 
-// ─────────────────────────────────────────────────────
-// Init Supabase (loaded from CDN above)
-// ─────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════
+// SUPABASE CLIENT
+// ═══════════════════════════════════════════════════════
 const { createClient } = supabase
 const db = createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: {
@@ -647,99 +643,128 @@ const db = createClient(SUPABASE_URL, SUPABASE_KEY, {
   }
 })
 
-// ─────────────────────────────────────────────────────
-// Fallback questions — used if Supabase has no rows
-// for today yet (so the game always works)
-// ─────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════
+// FALLBACK QUESTIONS (if DB has nothing for today)
+// ═══════════════════════════════════════════════════════
 const FALLBACK_QUESTIONS = [
   { category:'Technology', question:'How many times does the average American check their phone each day?', threshold_display:'120 times', answer_display:'96 times', source:'Asurion Research, 2023', direction:'lower' },
-  { category:'Nature',     question:"What percentage of Earth's oceans remain unexplored by humans?",       threshold_display:'50%',         answer_display:'~80%',      source:'NOAA',                        direction:'higher' },
-  { category:'Culture',    question:'How many languages are actively spoken in Papua New Guinea?',          threshold_display:'600 languages',answer_display:'~840 languages', source:'Ethnologue',              direction:'higher' },
-  { category:'Earth',      question:"What percentage of the world's freshwater is locked in glaciers?",     threshold_display:'80%',         answer_display:'~69%',      source:'U.S. Geological Survey',      direction:'lower' },
-  { category:'Food',       question:'How many hot dogs (millions) are eaten in the US on Independence Day?',threshold_display:'75 million',  answer_display:'150 million',source:'National Hot Dog & Sausage Council', direction:'higher' },
+  { category:'Nature',     question:"What percentage of Earth's oceans remain unexplored by humans?",        threshold_display:'50%',              answer_display:'~80%',           source:'NOAA',                             direction:'higher' },
+  { category:'Culture',    question:'How many languages are actively spoken in Papua New Guinea?',           threshold_display:'600 languages',    answer_display:'~840 languages', source:'Ethnologue',                       direction:'higher' },
+  { category:'Earth',      question:"What percentage of the world's freshwater is locked in glaciers?",      threshold_display:'80%',              answer_display:'~69%',           source:'U.S. Geological Survey',           direction:'lower'  },
+  { category:'Food',       question:'How many hot dogs (millions) are eaten in the US on Independence Day?', threshold_display:'75 million',       answer_display:'150 million',    source:'National Hot Dog & Sausage Council',direction:'higher' },
 ]
 
-// ─────────────────────────────────────────────────────
-// State
-// ─────────────────────────────────────────────────────
-let questions = []
-let ci = 0
-let results = []
-let guessed = false
-let siFrom = 'intro'
+// ═══════════════════════════════════════════════════════
+// GAME STATE
+// ═══════════════════════════════════════════════════════
+let questions   = []
+let ci          = 0
+let results     = []
+let guessed     = false
+let siFrom      = 'intro'
 let currentUser = null
-let finalScore = 0
+let finalScore  = 0
 
-// ─────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════
+// DATE HELPERS
+// ═══════════════════════════════════════════════════════
 function todayKey() {
   const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
 }
+
 function dayNum() {
   const d = new Date()
-  const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  const today = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
   return Math.floor((new Date(today) - new Date('2026-03-18')) / 86400000) + 1
 }
+
+// ═══════════════════════════════════════════════════════
+// UI HELPERS
+// ═══════════════════════════════════════════════════════
 function show(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'))
   document.getElementById(id).classList.add('active')
 }
+
+// Safe button helper — sets text, disabled state, and replaces onclick cleanly
+function setBtn(id, text, disabled, handler) {
+  const btn = document.getElementById(id)
+  if (!btn) return
+  btn.textContent = text
+  btn.disabled = disabled
+  // Remove all existing listeners by cloning
+  const fresh = btn.cloneNode(true)
+  btn.parentNode.replaceChild(fresh, btn)
+  if (handler) fresh.addEventListener('click', handler)
+}
+
+// ═══════════════════════════════════════════════════════
+// LOCAL STORAGE
+// ═══════════════════════════════════════════════════════
 function playedToday() {
   return localStorage.getItem('pg_last_played') === todayKey()
 }
 
-// ─────────────────────────────────────────────────────
-// Local storage stats (used for guests)
-// ─────────────────────────────────────────────────────
 function getLocalStats() {
   return {
-    lastPlayed:  localStorage.getItem('pg_last_played') || '',
-    streak:      parseInt(localStorage.getItem('pg_streak') || '0'),
-    dist:        JSON.parse(localStorage.getItem('pg_score_dist') || '[0,0,0,0,0,0]'),
-    plays:       parseInt(localStorage.getItem('pg_plays') || '0'),
-    totalScore:  parseInt(localStorage.getItem('pg_total_score') || '0'),
-    lastScore:   parseInt(localStorage.getItem('pg_last_score') || '0')
+    lastPlayed: localStorage.getItem('pg_last_played') || '',
+    streak:     parseInt(localStorage.getItem('pg_streak')     || '0'),
+    dist:       JSON.parse(localStorage.getItem('pg_score_dist')|| '[0,0,0,0,0,0]'),
+    plays:      parseInt(localStorage.getItem('pg_plays')      || '0'),
+    totalScore: parseInt(localStorage.getItem('pg_total_score')|| '0'),
+    lastScore:  parseInt(localStorage.getItem('pg_last_score') || '0'),
   }
 }
 
 function saveLocalStats(score, answers = []) {
   const s = getLocalStats()
-  const today = todayKey()
-  const yesterday = new Date()
-  yesterday.setDate(yesterday.getDate() - 1)
-  const yKey = yesterday.toISOString().slice(0, 10)
+  const yest = new Date()
+  yest.setDate(yest.getDate() - 1)
+  const yKey = `${yest.getFullYear()}-${String(yest.getMonth()+1).padStart(2,'0')}-${String(yest.getDate()).padStart(2,'0')}`
 
-  let newStreak
-  if (s.lastPlayed === yKey)     newStreak = s.streak + 1
-  else if (s.lastPlayed === today) newStreak = s.streak
-  else                             newStreak = 1
+  let streak
+  if      (s.lastPlayed === yKey)      streak = s.streak + 1
+  else if (s.lastPlayed === todayKey()) streak = s.streak
+  else                                  streak = 1
 
   const dist = s.dist
   dist[score]++
-
-  localStorage.setItem('pg_last_played', today)
-  localStorage.setItem('pg_streak', newStreak)
-  localStorage.setItem('pg_score_dist', JSON.stringify(dist))
-  localStorage.setItem('pg_plays', s.plays + 1)
-  localStorage.setItem('pg_total_score', s.totalScore + score)
-  localStorage.setItem('pg_last_score', score)
-  localStorage.setItem('pg_last_answers', JSON.stringify(answers))
-  return newStreak
+  localStorage.setItem('pg_last_played',    todayKey())
+  localStorage.setItem('pg_streak',         streak)
+  localStorage.setItem('pg_score_dist',     JSON.stringify(dist))
+  localStorage.setItem('pg_plays',          s.plays + 1)
+  localStorage.setItem('pg_total_score',    s.totalScore + score)
+  localStorage.setItem('pg_last_score',     score)
+  localStorage.setItem('pg_last_answers',   JSON.stringify(answers))
+  return streak
 }
 
-// ─────────────────────────────────────────────────────
-// Supabase: fetch today's questions
-// ─────────────────────────────────────────────────────
-async function fetchTodaysQuestions() {
-  const today = todayKey()
-  const { data, error } = await db
-    .from('questions')
-    .select('*')
-    .eq('play_date', today)
-    .order('sort_order', { ascending: true })
+// In-progress game persistence
+function saveProgress() {
+  localStorage.setItem('pg_progress_date',      todayKey())
+  localStorage.setItem('pg_progress_ci',        ci)
+  localStorage.setItem('pg_progress_results',   JSON.stringify(results))
+  localStorage.setItem('pg_progress_questions', JSON.stringify(questions))
+}
+function clearProgress() {
+  ['pg_progress_date','pg_progress_ci','pg_progress_results','pg_progress_questions']
+    .forEach(k => localStorage.removeItem(k))
+}
+function hasProgressToday() {
+  return localStorage.getItem('pg_progress_date') === todayKey()
+    && localStorage.getItem('pg_progress_ci') !== null
+    && !playedToday()
+}
 
+// ═══════════════════════════════════════════════════════
+// SUPABASE DATA
+// ═══════════════════════════════════════════════════════
+async function fetchTodaysQuestions() {
+  const { data, error } = await db
+    .from('questions').select('*')
+    .eq('play_date', todayKey())
+    .order('sort_order', { ascending: true })
   if (error || !data || data.length === 0) {
     console.warn('No questions in DB for today, using fallback.')
     return FALLBACK_QUESTIONS
@@ -747,70 +772,52 @@ async function fetchTodaysQuestions() {
   return data
 }
 
-// ─────────────────────────────────────────────────────
-// Supabase: save a completed play
-// ─────────────────────────────────────────────────────
 async function savePlayToSupabase(score, answers) {
-  const payload = {
-    play_date: todayKey(),
-    score,
-    answers,
-    user_id: currentUser ? currentUser.id : null
-  }
-
+  const payload = { play_date: todayKey(), score, answers, user_id: currentUser?.id ?? null }
   if (currentUser) {
-    // Signed-in: upsert so re-saves don't duplicate
-    const { error } = await db.from('plays').upsert(
-      payload,
-      { onConflict: 'user_id,play_date', ignoreDuplicates: true }
-    )
-    if (error) console.error('Could not save play:', error.message)
+    const { error } = await db.from('plays').upsert(payload, { onConflict: 'user_id,play_date', ignoreDuplicates: true })
+    if (error) console.error('Save play error:', error.message)
   } else {
-    // Guest: plain insert, no dedup needed
     const { error } = await db.from('plays').insert(payload)
-    if (error) console.error('Could not save anonymous play:', error.message)
+    if (error) console.error('Save anon play error:', error.message)
   }
 }
 
-// ─────────────────────────────────────────────────────
-// Supabase: load full stats for signed-in user
-// ─────────────────────────────────────────────────────
 async function loadSupabaseStats() {
   if (!currentUser) return null
-
   const { data: plays, error } = await db
-    .from('plays')
-    .select('play_date, score')
+    .from('plays').select('play_date, score')
     .eq('user_id', currentUser.id)
     .order('play_date', { ascending: false })
-
   if (error || !plays) return null
 
-  const dist = [0, 0, 0, 0, 0, 0]
+  const dist = [0,0,0,0,0,0]
   plays.forEach(p => dist[p.score]++)
 
-  // Streak: walk backwards from today through consecutive days
   let streak = 0
   for (let i = 0; i < plays.length; i++) {
-    const expected = new Date()
-    expected.setDate(expected.getDate() - i)
-    const expectedKey = expected.toISOString().slice(0, 10)
-    if (plays[i].play_date === expectedKey) streak++
+    const exp = new Date()
+    exp.setDate(exp.getDate() - i)
+    const expKey = `${exp.getFullYear()}-${String(exp.getMonth()+1).padStart(2,'0')}-${String(exp.getDate()).padStart(2,'0')}`
+    if (plays[i].play_date === expKey) streak++
     else break
   }
-
-  const totalScore = plays.reduce((sum, p) => sum + p.score, 0)
-  return {
-    dist,
-    streak,
-    plays: plays.length,
-    avg: plays.length > 0 ? (totalScore / plays.length).toFixed(1) : '—'
-  }
+  const total = plays.reduce((s, p) => s + p.score, 0)
+  return { dist, streak, plays: plays.length, avg: plays.length > 0 ? (total/plays.length).toFixed(1) : '—' }
 }
 
-// ─────────────────────────────────────────────────────
-// Auth
-// ─────────────────────────────────────────────────────
+async function getScorePercentageToday(score) {
+  const { data, error } = await db.rpc('get_score_distribution_today', { p_date: todayKey() })
+  if (error || !data || data.length === 0) return null
+  const total    = data.reduce((s, r) => s + parseInt(r.count), 0)
+  const matching = data.find(r => r.score === score)
+  if (!matching || total === 0) return null
+  return { pct: Math.round((parseInt(matching.count) / total) * 100), total }
+}
+
+// ═══════════════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════════════
 function goSignIn(from) {
   siFrom = from
   document.getElementById('si-error').style.display = 'none'
@@ -819,8 +826,13 @@ function goSignIn(from) {
 
 function goBack() {
   show('s-' + siFrom)
-  if (siFrom === 'intro') initIntro()
-  if (siFrom === 'done')  renderDoneAuth()
+  if (siFrom === 'intro') renderIntro()
+  if (siFrom === 'done')  renderDoneAuthArea()
+}
+
+async function signOut() {
+  await db.auth.signOut()
+  // onAuthStateChange fires SIGNED_OUT → renderIntro() runs automatically
 }
 
 async function doSignIn() {
@@ -833,329 +845,173 @@ async function doSignIn() {
   errEl.style.background = 'var(--red-bg)'
   errEl.style.color = 'var(--red-tx)'
 
-  if (!email) {
-    errEl.textContent = 'Please enter your email address.'
-    errEl.style.display = 'block'
-    return
-  }
-  if (!pw || pw.length < 6) {
-    errEl.textContent = 'Password must be at least 6 characters.'
-    errEl.style.display = 'block'
-    return
-  }
+  if (!email) { errEl.textContent = 'Please enter your email.'; errEl.style.display = 'block'; return }
+  if (!pw || pw.length < 6) { errEl.textContent = 'Password must be at least 6 characters.'; errEl.style.display = 'block'; return }
 
   btn.textContent = 'Signing in…'
   btn.disabled = true
 
-  const { data, error } = await db.auth.signInWithPassword({ email, password: pw })
-
-  if (!error) {
-    currentUser = data.user
+  // Try sign in first
+  const { data: siData, error: siErr } = await db.auth.signInWithPassword({ email, password: pw })
+  if (!siErr) {
+    // onAuthStateChange handles the rest
     btn.textContent = 'Sign in / Create account'
     btn.disabled = false
-    goBack()
     return
   }
 
-  // Only create account if the error is specifically "user not found"
-  // not "wrong password"
-  const msg = error.message.toLowerCase()
-  const isNotFound = msg.includes('user not found') || msg.includes('no user found') || msg.includes('invalid login credentials')
-
-  // To distinguish wrong password vs no account, try fetching the user
-  // by attempting signup and checking if it says "already registered"
-  const { data: signUpData, error: signUpError } = await db.auth.signUp({ email, password: pw })
-
+  // If sign in failed, try sign up — if signup says "already registered" it means wrong password
+  const { data: suData, error: suErr } = await db.auth.signUp({ email, password: pw })
   btn.textContent = 'Sign in / Create account'
   btn.disabled = false
 
-  if (signUpError) {
-    if (signUpError.message.toLowerCase().includes('already registered') ||
-        signUpError.message.toLowerCase().includes('already exists')) {
-      errEl.textContent = 'Wrong password. Try again.'
-    } else {
-      errEl.textContent = signUpError.message
-    }
+  if (suErr) {
+    const m = suErr.message.toLowerCase()
+    errEl.textContent = (m.includes('already') || m.includes('registered') || m.includes('exists'))
+      ? 'Wrong password for this email. Try again.'
+      : suErr.message
     errEl.style.display = 'block'
-    btn.textContent = 'Sign in / Create account'
-    btn.disabled = false
     return
   }
-
-  if (signUpData.user && signUpData.session) {
-    currentUser = signUpData.user
-    goBack()
-    return
-  }
-
-  if (signUpData.user && !signUpData.session) {
+  if (suData.user && !suData.session) {
     errEl.style.background = 'var(--green-bg)'
     errEl.style.color = 'var(--green-tx)'
     errEl.textContent = 'Account created! Check your email to confirm, then sign in.'
     errEl.style.display = 'block'
   }
+  // If session exists, onAuthStateChange handles navigation
 }
 
 async function doGoogleSignIn() {
-  // Force clear any stale session state before starting OAuth
-  // This is what causes the "does nothing" on first click after sign out
-  try {
-    await db.auth.signOut({ scope: 'local' })
-  } catch (e) {
-    // Ignore errors — we just want the local state cleared
-  }
-
-  // Small delay to let Supabase finish clearing state
-  await new Promise(resolve => setTimeout(resolve, 150))
-
+  // Clear any stale local session before OAuth so it always works on first click
+  await db.auth.signOut({ scope: 'local' })
   const { error } = await db.auth.signInWithOAuth({
     provider: 'google',
-    options: {
-      redirectTo: window.location.href
-    }
+    options: { redirectTo: window.location.href }
   })
-  if (error) console.error('Google sign in error:', error.message)
+  if (error) console.error('Google OAuth error:', error.message)
 }
 
-async function signOut() {
-  const { error } = await db.auth.signOut()
-  if (error) console.error('Sign out error:', error.message)
-  // onAuthStateChange will fire SIGNED_OUT and call initIntro()
-  // but if we're on the done screen we need to update that too
-  currentUser = null
-  renderDoneAuth()
-  const doneAuthEl = document.getElementById('done-auth-el')
-  doneAuthEl.innerHTML = ''
-}
-
-// ─────────────────────────────────────────────────────
-// Intro screen setup
-// ─────────────────────────────────────────────────────
-async function initIntro() {
-  const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+// ═══════════════════════════════════════════════════════
+// INTRO SCREEN
+// ═══════════════════════════════════════════════════════
+async function renderIntro() {
+  const today = new Date().toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' })
   document.getElementById('day-date-lbl').textContent = `5 questions · ${today}`
   document.getElementById('day-game-lbl').textContent = `Today's game · #${dayNum()}`
 
+  // Auth chip — always rebuild from scratch to avoid stale listeners
   const authEl = document.getElementById('intro-auth-el')
   const siBtn  = document.getElementById('intro-si-btn')
+  authEl.innerHTML = ''
 
   if (currentUser) {
-    const label = currentUser.email.split('@')[0]
-    authEl.innerHTML = `<button class="user-chip" id="intro-signout-btn">${label} · Sign out</button>`
-    document.getElementById('intro-signout-btn').addEventListener('click', signOut)
+    const chip = document.createElement('button')
+    chip.className = 'user-chip'
+    chip.textContent = `${currentUser.email.split('@')[0]} · Sign out`
+    chip.addEventListener('click', signOut)
+    authEl.appendChild(chip)
     siBtn.style.display = 'none'
   } else {
-    authEl.innerHTML = ''
     siBtn.style.display = 'block'
   }
 
-  const playBtn = document.getElementById('play-btn')
+  // Check if already played (remote for signed-in users, local for guests)
+  let alreadyPlayed = playedToday()
+  let lastScore = getLocalStats().lastScore
 
-  // If signed in, check Supabase for today's play
-  let alreadyPlayedRemote = false
-  let remoteScore = null
-
-  if (currentUser) {
-    const { data } = await db
-      .from('plays')
-      .select('score, answers')
-      .eq('user_id', currentUser.id)
-      .eq('play_date', todayKey())
-      .limit(1)
-      .maybeSingle()
-
+  if (currentUser && !alreadyPlayed) {
+    const { data } = await db.from('plays').select('score, answers')
+      .eq('user_id', currentUser.id).eq('play_date', todayKey())
+      .limit(1).maybeSingle()
     if (data) {
-      alreadyPlayedRemote = true
-      remoteScore = data.score
-
-      // Sync to localStorage so offline checks work too
+      alreadyPlayed = true
+      lastScore = data.score
       localStorage.setItem('pg_last_played', todayKey())
       localStorage.setItem('pg_last_score', data.score)
-      if (data.answers) {
-        localStorage.setItem('pg_last_answers', JSON.stringify(data.answers))
-      }
+      if (data.answers) localStorage.setItem('pg_last_answers', JSON.stringify(data.answers))
     }
   }
 
-  const playedLocal  = playedToday()
-  const alreadyPlayed = playedLocal || alreadyPlayedRemote
-  const lastScore = remoteScore ?? getLocalStats().lastScore
+  // Set play button state — always use setBtn to clear stale listeners
+  document.getElementById('already-wrap').style.display = 'none'
 
   if (alreadyPlayed) {
-    playBtn.disabled = true
-    playBtn.textContent = 'Come back tomorrow'
+    setBtn('play-btn', 'Come back tomorrow', true, null)
     document.getElementById('already-wrap').style.display = 'block'
     document.getElementById('already-score-lbl').textContent = `${lastScore}/5`
   } else if (hasProgressToday()) {
-    playBtn.disabled = false
-    playBtn.textContent = 'Resume puzzle'
-    playBtn.onclick = resumeGame
-    document.getElementById('already-wrap').style.display = 'none'
+    setBtn('play-btn', 'Resume puzzle', false, resumeGame)
   } else {
-    playBtn.disabled = false
-    playBtn.textContent = "Play today's game"
-    playBtn.onclick = startGame
-    document.getElementById('already-wrap').style.display = 'none'
+    setBtn('play-btn', "Play today's game", false, startGame)
   }
 }
 
-async function showStats() {
-  let stats
+// ═══════════════════════════════════════════════════════
+// DONE SCREEN AUTH AREAS
+// ═══════════════════════════════════════════════════════
+function renderDoneAuthArea() {
+  // Top-right chip
+  const topEl = document.getElementById('done-auth-el')
+  topEl.innerHTML = ''
   if (currentUser) {
-    stats = await loadSupabaseStats()
-  }
-  if (!stats) {
-    const s = getLocalStats()
-    stats = {
-      streak: s.streak,
-      plays: s.plays,
-      avg: s.plays > 0 ? (s.totalScore / s.plays).toFixed(1) : '—',
-      dist: s.dist
-    }
+    const chip = document.createElement('button')
+    chip.className = 'user-chip'
+    chip.textContent = `${currentUser.email.split('@')[0]} · Sign out`
+    chip.addEventListener('click', signOut)
+    topEl.appendChild(chip)
   }
 
-  const s = getLocalStats()
-  const lastScore   = s.lastScore
-  const lastAnswers = JSON.parse(localStorage.getItem('pg_last_answers') || '[]')
-
-  document.getElementById('cscore').textContent = `${lastScore}/5`
-  document.getElementById('cmsg').textContent = 'Come back tomorrow for the next game.'
-
-  getScorePercentageToday(lastScore).then(result => {
-    const el = document.getElementById('peer-msg')
-    if (!result) { el.textContent = ''; return }
-    const { pct, total } = result
-    el.textContent = `${pct}% of ${total.toLocaleString()} player${total === 1 ? '' : 's'} scored ${lastScore}/5 today`
-  })
-
-  document.getElementById('streak-num').textContent = stats.streak
-  document.getElementById('played-num').textContent = stats.plays
-  document.getElementById('avg-num').textContent    = stats.avg
-
-  renderDist(stats.dist, lastScore)
-
-  // Rebuild emoji grid from saved answers
-  const eg = document.getElementById('egrid')
-  eg.innerHTML = ''
-  lastAnswers.forEach(r => {
-    const b = document.createElement('div')
-    b.className = 'eblock ' + (r ? 'ok' : 'no')
-    eg.appendChild(b)
-  })
-
-  // Share text
-  const emo = lastAnswers.length
-    ? lastAnswers.map(r => r ? '🟩' : '🟥').join('')
-    : ''
-  document.getElementById('sharebox').textContent =
-    `PopGuess #${dayNum()}\n${s.lastScore}/5  🔥 ${stats.streak}-day streak\n\n${emo}\n\nhttps://samtross10.github.io/popGuess/`
-
-  renderDoneAuth()
-
-  const doneAuthEl = document.getElementById('done-auth-el')
+  // Bottom CTA / synced badge
+  const ctaEl = document.getElementById('done-auth-cta')
   if (currentUser) {
-    const label = currentUser.email.split('@')[0]
-    doneAuthEl.innerHTML = `<button class="user-chip" id="done-signout-btn">${label} · Sign out</button>`
-    document.getElementById('done-signout-btn').addEventListener('click', signOut)
+    ctaEl.innerHTML = `<div class="synced-badge"><div class="synced-dot"></div>Stats synced to ${currentUser.email}</div>`
   } else {
-    doneAuthEl.innerHTML = ''
+    ctaEl.innerHTML = `
+      <div class="signin-cta" id="done-signin-cta">
+        <div class="cta-ico">↗</div>
+        <div style="flex:1">
+          <div class="cta-title">Sign in to sync your stats</div>
+          <div class="cta-sub">Keep your streak and history across devices</div>
+        </div>
+      </div>`
+    document.getElementById('done-signin-cta').addEventListener('click', () => goSignIn('done'))
   }
-
-  // Always fetch today's questions fresh so review always works
-  const rv = document.getElementById('review')
-  rv.innerHTML = ''
-
-  const { data: qs, error: qErr } = await db
-    .from('questions')
-    .select('*')
-    .eq('play_date', todayKey())
-    .order('sort_order', { ascending: true })
-
-  if (qErr || !qs || qs.length === 0) {
-    rv.innerHTML = '<div style="font-size:13px;color:var(--text2);padding:.5rem 0">Question review unavailable.</div>'
-  } else if (lastAnswers.length === 0) {
-    rv.innerHTML = '<div style="font-size:13px;color:var(--text2);padding:.5rem 0">Play a game first to see your review.</div>'
-  } else {
-    qs.forEach((q, i) => {
-      const ok = lastAnswers[i]
-      const d  = document.createElement('div')
-      d.className = 'ritem'
-      d.innerHTML = `
-        <div class="rico ${ok ? 'ok' : 'no'}"></div>
-        <div>
-          <div class="rq">${q.question}</div>
-          <div class="ra">${q.answer_display} <span class="rsrc">(${q.source})</span></div>
-        </div>`
-      rv.appendChild(d)
-    })
-  }
-
-  // Add back button to header if not already there
-  const hdr = document.querySelector('#s-done .hdr')
-  if (!hdr.querySelector('.back-to-home')) {
-    const backBtn = document.createElement('button')
-    backBtn.className = 'user-chip back-to-home'
-    backBtn.textContent = '← Home'
-    backBtn.onclick = () => { show('s-intro'); initIntro() }
-    hdr.appendChild(backBtn)
-  }
-
-  show('s-done')
 }
 
-// ─────────────────────────────────────────────────────
-// Game flow
-// ─────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════
+// GAME FLOW
+// ═══════════════════════════════════════════════════════
 async function startGame() {
-  if (playedToday()) return
   ci = 0; results = []; guessed = false
-
   questions = await fetchTodaysQuestions()
   loadQ(0)
   show('s-game')
 }
 
 async function resumeGame() {
-  const savedQuestions = JSON.parse(localStorage.getItem('pg_progress_questions') || '[]')
-  const savedResults   = JSON.parse(localStorage.getItem('pg_progress_results') || '[]')
-  const savedCi        = parseInt(localStorage.getItem('pg_progress_ci') || '0')
-
-  if (savedQuestions.length === 0) {
-    questions = await fetchTodaysQuestions()
-  } else {
-    questions = savedQuestions
-  }
-
-  results = savedResults
-  ci = savedCi
-  guessed = false
-
-  // Restore the dot states from saved results
-  results.forEach((ok, i) => {
-    document.getElementById(`d${i}`).classList.add(ok ? 'ok' : 'no')
-  })
-
+  const savedQs = JSON.parse(localStorage.getItem('pg_progress_questions') || '[]')
+  questions = savedQs.length > 0 ? savedQs : await fetchTodaysQuestions()
+  results   = JSON.parse(localStorage.getItem('pg_progress_results') || '[]')
+  ci        = parseInt(localStorage.getItem('pg_progress_ci') || '0')
+  guessed   = false
+  results.forEach((ok, i) => document.getElementById(`d${i}`).classList.add(ok ? 'ok' : 'no'))
   loadQ(ci)
   document.getElementById('pfill').style.width = `${(ci / 5) * 100}%`
-  document.getElementById('qcnt').textContent = `${ci + 1} / 5`
   show('s-game')
 }
 
 function loadQ(i) {
   const q = questions[i]
   guessed = false
-
-  document.getElementById('qcnt').textContent = `${i + 1} / 5`
-  document.getElementById('qcat').textContent = q.category
+  document.getElementById('qcnt').textContent  = `${i+1} / 5`
+  document.getElementById('qcat').textContent  = q.category
   document.getElementById('qtext').textContent = q.question
-  document.getElementById('qthr').textContent = q.threshold_display
-  document.getElementById('pfill').style.width = `${(i / 5) * 100}%`
-
-  const bh = document.getElementById('bhi')
-  const bl = document.getElementById('blo')
+  document.getElementById('qthr').textContent  = q.threshold_display
+  document.getElementById('pfill').style.width = `${(i/5)*100}%`
+  const bh = document.getElementById('bhi'), bl = document.getElementById('blo')
   bh.className = 'gbtn'; bl.className = 'gbtn'
   bh.disabled = false;   bl.disabled = false
-
   document.getElementById('rev').classList.remove('show')
   document.getElementById('nxtbtn').classList.remove('show')
 }
@@ -1163,90 +1019,47 @@ function loadQ(i) {
 function guess(dir) {
   if (guessed) return
   guessed = true
-
-  const q   = questions[ci]
-  const ok  = dir === q.direction
+  const q  = questions[ci]
+  const ok = dir === q.direction
   results.push(ok)
-
-  const bh = document.getElementById('bhi')
-  const bl = document.getElementById('blo')
-  const chosen  = dir === 'higher' ? bh : bl
-  const other   = dir === 'higher' ? bl : bh
+  const bh = document.getElementById('bhi'), bl = document.getElementById('blo')
+  const chosen     = dir === 'higher' ? bh : bl
+  const other      = dir === 'higher' ? bl : bh
   const correctBtn = q.direction === 'higher' ? bh : bl
-
   chosen.disabled = true; other.disabled = true
-
-  if (ok) {
-    chosen.classList.add('ok')
-    other.classList.add('dim')
-  } else {
-    chosen.classList.add('no')
-    correctBtn.classList.add('ok')
-    other.classList.add('dim')
-  }
-
+  if (ok) { chosen.classList.add('ok'); other.classList.add('dim') }
+  else    { chosen.classList.add('no'); correctBtn.classList.add('ok'); other.classList.add('dim') }
   document.getElementById(`d${ci}`).classList.add(ok ? 'ok' : 'no')
   document.getElementById('revnum').textContent = q.answer_display
   document.getElementById('revsrc').textContent = 'Source: ' + q.source
   document.getElementById('rev').classList.add('show')
-
   const nb = document.getElementById('nxtbtn')
   nb.textContent = ci < 4 ? 'Next question →' : 'See my results →'
   nb.classList.add('show')
-
   saveProgress()
 }
 
 function nextQ() {
-  if (ci < 4) { ci++; loadQ(ci); saveProgress() } else { clearProgress(); done() }
+  if (ci < 4) { ci++; loadQ(ci); saveProgress() }
+  else        { clearProgress(); done() }
 }
 
-function saveProgress() {
-  localStorage.setItem('pg_progress_date', todayKey())
-  localStorage.setItem('pg_progress_ci', ci)
-  localStorage.setItem('pg_progress_results', JSON.stringify(results))
-  localStorage.setItem('pg_progress_questions', JSON.stringify(questions))
-}
-
-function clearProgress() {
-  localStorage.removeItem('pg_progress_date')
-  localStorage.removeItem('pg_progress_ci')
-  localStorage.removeItem('pg_progress_results')
-  localStorage.removeItem('pg_progress_questions')
-}
-
-function hasProgressToday() {
-  return localStorage.getItem('pg_progress_date') === todayKey()
-    && localStorage.getItem('pg_progress_ci') !== null
-    && !playedToday()
-}
-
-// ─────────────────────────────────────────────────────
-// Done / results screen
-// ─────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════
+// RESULTS SCREEN
+// ═══════════════════════════════════════════════════════
 async function done() {
   finalScore = results.filter(Boolean).length
 
-  // Save locally for guests, or to Supabase for signed-in users
   const localStreak = saveLocalStats(finalScore, results)
   await savePlayToSupabase(finalScore, results)
 
-  // Decide which stats to show
-  let stats
-  if (currentUser) {
-    stats = await loadSupabaseStats()
-  }
+  let stats = currentUser ? await loadSupabaseStats() : null
   if (!stats) {
     const s = getLocalStats()
-    stats = {
-      streak: localStreak,
-      plays: s.plays,
-      avg: s.plays > 0 ? (s.totalScore / s.plays).toFixed(1) : finalScore.toFixed(1),
-      dist: s.dist
-    }
+    stats = { streak: localStreak, plays: s.plays, dist: s.dist,
+              avg: s.plays > 0 ? (s.totalScore / s.plays).toFixed(1) : finalScore.toFixed(1) }
   }
 
-  // Render score + message
   document.getElementById('pfill').style.width = '100%'
   document.getElementById('cscore').textContent = `${finalScore}/5`
   const msgs = [
@@ -1254,28 +1067,21 @@ async function done() {
     'Keep going! Your instincts will sharpen.',
     "Not bad! You're getting there.",
     'Good work! Solid instincts.',
-    'Nice! You\'ve got a sharp instinct.',
+    "Nice! You've got a sharp instinct.",
     'Perfect score! You know your numbers.'
   ]
   document.getElementById('cmsg').textContent = msgs[finalScore]
 
-  // Load peer comparison async — fills in after render
-  getScorePercentageToday(finalScore).then(result => {
+  getScorePercentageToday(finalScore).then(r => {
     const el = document.getElementById('peer-msg')
-    if (!result) { el.textContent = ''; return }
-    const { pct, total } = result
-    el.textContent = `${pct}% of ${total.toLocaleString()} player${total === 1 ? '' : 's'} scored ${finalScore}/5 today`
+    el.textContent = r ? `${r.pct}% of ${r.total.toLocaleString()} player${r.total===1?'':'s'} scored ${finalScore}/5 today` : ''
   })
 
-  // Stat pills
   document.getElementById('streak-num').textContent = stats.streak
   document.getElementById('played-num').textContent = stats.plays
   document.getElementById('avg-num').textContent    = stats.avg
-
-  // Distribution chart
   renderDist(stats.dist, finalScore)
 
-  // Emoji row
   const eg = document.getElementById('egrid')
   eg.innerHTML = ''
   results.forEach(r => {
@@ -1284,82 +1090,110 @@ async function done() {
     eg.appendChild(b)
   })
 
-  // Share text
   const emo = results.map(r => r ? '🟩' : '🟥').join('')
   document.getElementById('sharebox').textContent =
     `PopGuess #${dayNum()}\n${finalScore}/5  🔥 ${stats.streak}-day streak\n\n${emo}\n\nhttps://samtross10.github.io/popGuess/`
 
-  // Auth CTA + done-header user chip
-  renderDoneAuth()
-  const doneAuthEl = document.getElementById('done-auth-el')
-  if (currentUser) {
-    const label = currentUser.email.split('@')[0]
-    doneAuthEl.innerHTML = `<button class="user-chip" id="done-signout-btn">${label} · Sign out</button>`
-    document.getElementById('done-signout-btn').addEventListener('click', signOut)
-  } else {
-    doneAuthEl.innerHTML = ''
-  }
+  renderDoneAuthArea()
 
-  // Question review
   const rv = document.getElementById('review')
   rv.innerHTML = ''
   questions.forEach((q, i) => {
     const ok = results[i]
     const d  = document.createElement('div')
     d.className = 'ritem'
-    d.innerHTML = `
-      <div class="rico ${ok ? 'ok' : 'no'}"></div>
-      <div>
-        <div class="rq">${q.question}</div>
-        <div class="ra">${q.answer_display} <span class="rsrc">(${q.source})</span></div>
-      </div>`
+    d.innerHTML = `<div class="rico ${ok?'ok':'no'}"></div><div><div class="rq">${q.question}</div><div class="ra">${q.answer_display} <span class="rsrc">(${q.source})</span></div></div>`
     rv.appendChild(d)
   })
 
   show('s-done')
 }
 
+async function showStats() {
+  let stats = currentUser ? await loadSupabaseStats() : null
+  if (!stats) {
+    const s = getLocalStats()
+    stats = { streak: s.streak, plays: s.plays, dist: s.dist,
+              avg: s.plays > 0 ? (s.totalScore / s.plays).toFixed(1) : '—' }
+  }
+
+  const s           = getLocalStats()
+  const lastScore   = s.lastScore
+  const lastAnswers = JSON.parse(localStorage.getItem('pg_last_answers') || '[]')
+
+  document.getElementById('cscore').textContent = `${lastScore}/5`
+  document.getElementById('cmsg').textContent   = 'Come back tomorrow for the next game.'
+  document.getElementById('peer-msg').textContent = ''
+
+  getScorePercentageToday(lastScore).then(r => {
+    const el = document.getElementById('peer-msg')
+    el.textContent = r ? `${r.pct}% of ${r.total.toLocaleString()} player${r.total===1?'':'s'} scored ${lastScore}/5 today` : ''
+  })
+
+  document.getElementById('streak-num').textContent = stats.streak
+  document.getElementById('played-num').textContent = stats.plays
+  document.getElementById('avg-num').textContent    = stats.avg
+  renderDist(stats.dist, lastScore)
+
+  const eg = document.getElementById('egrid')
+  eg.innerHTML = ''
+  lastAnswers.forEach(r => {
+    const b = document.createElement('div')
+    b.className = 'eblock ' + (r ? 'ok' : 'no')
+    eg.appendChild(b)
+  })
+
+  const emo = lastAnswers.map(r => r ? '🟩' : '🟥').join('')
+  document.getElementById('sharebox').textContent =
+    `PopGuess #${dayNum()}\n${lastScore}/5  🔥 ${stats.streak}-day streak\n\n${emo}\n\nhttps://samtross10.github.io/popGuess/`
+
+  renderDoneAuthArea()
+
+  // Back button — only add once
+  const hdr = document.querySelector('#s-done .hdr')
+  if (!hdr.querySelector('.back-to-home')) {
+    const btn = document.createElement('button')
+    btn.className = 'user-chip back-to-home'
+    btn.textContent = '← Home'
+    btn.addEventListener('click', () => { show('s-intro'); renderIntro() })
+    hdr.appendChild(btn)
+  }
+
+  // Question review
+  const rv = document.getElementById('review')
+  rv.innerHTML = ''
+  const { data: qs } = await db.from('questions').select('*')
+    .eq('play_date', todayKey()).order('sort_order', { ascending: true })
+
+  if (!qs || qs.length === 0) {
+    rv.innerHTML = '<div style="font-size:13px;color:var(--text2);padding:.5rem 0">Question review unavailable.</div>'
+  } else if (lastAnswers.length === 0) {
+    rv.innerHTML = '<div style="font-size:13px;color:var(--text2);padding:.5rem 0">Play a game first to see your review.</div>'
+  } else {
+    qs.forEach((q, i) => {
+      const ok = lastAnswers[i]
+      const d  = document.createElement('div')
+      d.className = 'ritem'
+      d.innerHTML = `<div class="rico ${ok?'ok':'no'}"></div><div><div class="rq">${q.question}</div><div class="ra">${q.answer_display} <span class="rsrc">(${q.source})</span></div></div>`
+      rv.appendChild(d)
+    })
+  }
+
+  show('s-done')
+}
+
 function renderDist(dist, curr) {
   const max = Math.max(...dist, 1)
-  let html = ''
-  dist.forEach((v, i) => {
-    const pct    = v === 0 ? 0 : Math.max(Math.round((v / max) * 100), 5)
-    const isCurr = i === curr
-    html += `
-      <div class="dist-row">
-        <div class="dist-label">${i}</div>
-        <div class="dist-bar-wrap">
-          <div class="dist-bar${isCurr ? ' curr' : ''}" style="width:${pct}%"></div>
-        </div>
-        <div class="dist-count">${v}</div>
-      </div>`
-  })
-  document.getElementById('dist-chart').innerHTML = html
+  document.getElementById('dist-chart').innerHTML = dist.map((v, i) => `
+    <div class="dist-row">
+      <div class="dist-label">${i}</div>
+      <div class="dist-bar-wrap">
+        <div class="dist-bar${i===curr?' curr':''}" style="width:${v===0?0:Math.max(Math.round((v/max)*100),5)}%"></div>
+      </div>
+      <div class="dist-count">${v}</div>
+    </div>`).join('')
 }
 
-function renderDoneAuth() {
-  const el = document.getElementById('done-auth-cta')
-  if (currentUser) {
-    el.innerHTML = `
-      <div class="synced-badge">
-        <div class="synced-dot"></div>
-        Stats synced to ${currentUser.email}
-      </div>`
-  } else {
-    el.innerHTML = `
-      <div class="signin-cta" onclick="goSignIn('done')">
-        <div class="cta-ico">↗</div>
-        <div style="flex:1">
-          <div class="cta-title">Sign in to sync your stats</div>
-          <div class="cta-sub">Keep your streak and history across devices</div>
-        </div>
-      </div>`
-  }
-}
-
-// ─────────────────────────────────────────────────────
-// Share / copy
-// ─────────────────────────────────────────────────────
 function doCopy() {
   navigator.clipboard.writeText(document.getElementById('sharebox').textContent).then(() => {
     const b = document.getElementById('copybtn')
@@ -1368,60 +1202,47 @@ function doCopy() {
   })
 }
 
-// ─────────────────────────────────────────────────────
-// Boot — check for existing Supabase session
-// ─────────────────────────────────────────────────────
-async function boot() {
-  // onAuthStateChange is the ONLY place that drives UI updates.
-  // INITIAL_SESSION fires on every single page load — signed in or not —
-  // so we never need to call initIntro() manually.
+// ═══════════════════════════════════════════════════════
+// BOOT — single auth listener drives everything
+// ═══════════════════════════════════════════════════════
+function boot() {
+  // Clean up OAuth hash from URL immediately
+  if (window.location.hash.includes('access_token')) {
+    window.history.replaceState({}, document.title, window.location.pathname)
+  }
+
+  // This is the ONLY place that sets currentUser and updates the UI.
+  // INITIAL_SESSION fires on every page load (signed in or not).
+  // SIGNED_IN fires after OAuth redirect or email sign-in.
+  // SIGNED_OUT fires after signOut().
   db.auth.onAuthStateChange(async (event, session) => {
-    console.log('auth event:', event, session?.user?.email ?? 'no user')
+    console.log('auth:', event, session?.user?.email ?? 'none')
     currentUser = session?.user ?? null
 
-    if (window.location.hash.includes('access_token')) {
-      window.history.replaceState({}, document.title, window.location.pathname)
-    }
+    // Always re-render intro
+    await renderIntro()
 
-    // Always update intro screen
-    await initIntro()
-
-    // Also update done screen if it's visible
-    const doneScreen = document.getElementById('s-done')
-    if (doneScreen.classList.contains('active')) {
-      renderDoneAuth()
-      const doneAuthEl = document.getElementById('done-auth-el')
-      if (currentUser) {
-        const label = currentUser.email.split('@')[0]
-        doneAuthEl.innerHTML = `<button class="user-chip" id="done-signout-btn">${label} · Sign out</button>`
-        document.getElementById('done-signout-btn').addEventListener('click', signOut)
-      } else {
-        doneAuthEl.innerHTML = ''
-      }
-    }
-
-    // If just signed in while on sign-in screen, go back
+    // If user just signed in while on the sign-in screen, navigate back
     if (event === 'SIGNED_IN' && document.getElementById('s-signin').classList.contains('active')) {
       goBack()
     }
+
+    // If user signed out while on the done screen, update it
+    if (event === 'SIGNED_OUT' && document.getElementById('s-done').classList.contains('active')) {
+      renderDoneAuthArea()
+    }
   })
 }
 
-async function getScorePercentageToday(score) {
-  const { data, error } = await db.rpc('get_score_distribution_today', {
-    p_date: todayKey()
-  })
-
-  if (error || !data || data.length === 0) return null
-
-  const total = data.reduce((sum, row) => sum + parseInt(row.count), 0)
-  const matching = data.find(row => row.score === score)
-
-  if (!matching || total === 0) return null
-
-  const pct = Math.round((parseInt(matching.count) / total) * 100)
-  return { pct, total }
-}
+// Wire up static HTML buttons that never change
+document.getElementById('intro-si-btn').addEventListener('click', () => goSignIn('intro'))
+document.querySelector('#s-signin .back-link').addEventListener('click', goBack)
+document.querySelector('#s-signin .btn-primary').addEventListener('click', doSignIn)
+document.querySelector('#s-signin .btn-secondary').addEventListener('click', doGoogleSignIn)
+document.getElementById('nxtbtn').addEventListener('click', nextQ)
+document.getElementById('bhi').addEventListener('click', () => guess('higher'))
+document.getElementById('blo').addEventListener('click', () => guess('lower'))
+document.getElementById('copybtn').addEventListener('click', doCopy)
 
 boot()
 </script>
