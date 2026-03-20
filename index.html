@@ -895,8 +895,7 @@ async function doGoogleSignIn() {
 
 async function signOut() {
   await db.auth.signOut()
-  currentUser = null
-  initIntro()
+  // onAuthStateChange fires SIGNED_OUT automatically — no need to do anything else here
 }
 
 // ─────────────────────────────────────────────────────
@@ -1340,36 +1339,26 @@ function doCopy() {
 // Boot — check for existing Supabase session
 // ─────────────────────────────────────────────────────
 async function boot() {
-  // Show loading while we check auth state
-  document.getElementById('play-btn').textContent = 'Loading…'
-  document.getElementById('play-btn').disabled = true
-
-  // onAuthStateChange fires for BOTH normal sessions AND
-  // OAuth redirects — it must be set up before getSession()
+  // onAuthStateChange is the ONLY place that drives UI updates.
+  // INITIAL_SESSION fires on every single page load — signed in or not —
+  // so we never need to call initIntro() manually.
   db.auth.onAuthStateChange(async (event, session) => {
-    console.log('auth event:', event, session?.user?.email)
+    console.log('auth event:', event, session?.user?.email ?? 'no user')
     currentUser = session?.user ?? null
 
-    if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') {
-      await initIntro()
+    // Clean up the ugly hash from the URL after Google OAuth redirect
+    if (window.location.hash.includes('access_token')) {
+      window.history.replaceState({}, document.title, window.location.pathname)
     }
-    if (event === 'SIGNED_OUT') {
-      await initIntro()
+
+    // Always re-render the intro screen on any auth change
+    await initIntro()
+
+    // If the user just signed in and the sign-in screen is showing, go back
+    if (event === 'SIGNED_IN' && document.getElementById('s-signin').classList.contains('active')) {
+      goBack()
     }
   })
-
-  // This picks up the session from the URL hash after OAuth redirect
-  const { data: { session } } = await db.auth.getSession()
-  if (session) {
-    currentUser = session.user
-  }
-
-  // Clean up the URL after OAuth redirect
-  if (window.location.hash.includes('access_token')) {
-    window.history.replaceState({}, document.title, window.location.pathname)
-  }
-
-  await initIntro()
 }
 
 async function getScorePercentageToday(score) {
