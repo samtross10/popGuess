@@ -5,31 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PopGuess</title>
   <link rel="icon" type="image/png" href="favicon.png">
-
-  <!-- Supabase loaded from CDN — no npm or bundler needed -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
   <style>
-    /* ── Reset & base ───────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:       #ffffff;
-      --bg2:      #f5f4f0;
-      --bg3:      #eeedea;
-      --text:     #111110;
-      --text2:    #6b6a66;
-      --text3:    #a09f9b;
-      --border:   rgba(0,0,0,0.10);
-      --border2:  rgba(0,0,0,0.18);
-      --green-bg: #e8f5ec;
-      --green-tx: #1a6633;
-      --green-bd: rgba(26,102,51,0.25);
-      --red-bg:   #fdecea;
-      --red-tx:   #a32d2d;
-      --red-bd:   rgba(163,45,45,0.25);
-      --radius:   10px;
-      --radius-lg:14px;
+      --bg:        #ffffff;
+      --bg2:       #f5f4f0;
+      --bg3:       #eeedea;
+      --text:      #111110;
+      --text2:     #6b6a66;
+      --text3:     #a09f9b;
+      --border:    rgba(0,0,0,0.10);
+      --border2:   rgba(0,0,0,0.18);
+      --green-bg:  #e8f5ec;
+      --green-tx:  #1a6633;
+      --green-bd:  rgba(26,102,51,0.25);
+      --red-bg:    #fdecea;
+      --red-tx:    #a32d2d;
+      --red-bd:    rgba(163,45,45,0.25);
+      --r:         10px;
+      --rl:        14px;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
     }
 
@@ -52,611 +48,243 @@
       }
     }
 
-    html, body {
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-    }
-
-    /* ── Layout ─────────────────────────────────────── */
-    .pg {
-      max-width: 480px;
-      margin: 0 auto;
-      padding: 1.5rem 1.25rem 4rem;
-    }
-
+    html, body { background: var(--bg); color: var(--text); min-height: 100vh; }
+    .pg { max-width: 480px; margin: 0 auto; padding: 1.5rem 1.25rem 4rem; }
     .screen { display: none; flex-direction: column; }
     .screen.active { display: flex; }
-
-    /* ── Typography ─────────────────────────────────── */
+    .hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
     .logo { font-size: 18px; font-weight: 600; letter-spacing: -.01em; }
     .logo em { font-style: normal; color: var(--green-tx); }
-
-    /* ── Header row ─────────────────────────────────── */
-    .hdr {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1.5rem;
-    }
-
-    /* ── Progress bar ───────────────────────────────── */
-    .progress {
-      height: 2px;
-      background: var(--bg3);
-      border-radius: 2px;
-      margin-bottom: 1.5rem;
-      overflow: hidden;
-    }
-    .pf {
-      height: 100%;
-      background: var(--text);
-      border-radius: 2px;
-      transition: width .45s ease;
-    }
-
-    /* ── Answer dots ────────────────────────────────── */
+    .progress { height: 2px; background: var(--bg3); border-radius: 2px; margin-bottom: 1.5rem; overflow: hidden; }
+    .pf { height: 100%; background: var(--text); border-radius: 2px; transition: width .45s ease; }
     .dots { display: flex; gap: 8px; margin-bottom: 1.75rem; }
-    .dot {
-      width: 26px; height: 26px; border-radius: 50%;
-      border: 1px solid var(--border);
-      background: var(--bg2);
-      transition: background .2s, border-color .2s;
-    }
+    .dot { width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border); background: var(--bg2); transition: background .2s; }
     .dot.ok { background: var(--green-bg); border-color: var(--green-bd); }
-    .dot.no { background: var(--red-bg);   border-color: var(--red-bd); }
-
-    /* ── Category label ─────────────────────────────── */
-    .cat {
-      font-size: 11px; font-weight: 600;
-      letter-spacing: .08em; text-transform: uppercase;
-      color: var(--text3); margin-bottom: .5rem;
-    }
-
-    /* ── Question text ──────────────────────────────── */
-    .qtext {
-      font-size: 16px; line-height: 1.6;
-      color: var(--text); margin-bottom: 1.5rem;
-    }
-
-    /* ── Threshold card ─────────────────────────────── */
-    .tcard {
-      background: var(--bg2);
-      border-radius: var(--radius-lg);
-      padding: 1.25rem 1.5rem;
-      text-align: center;
-      margin-bottom: 1.5rem;
-    }
+    .dot.no { background: var(--red-bg); border-color: var(--red-bd); }
+    .cat { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--text3); margin-bottom: .5rem; }
+    .qtext { font-size: 16px; line-height: 1.6; margin-bottom: 1.5rem; }
+    .tcard { background: var(--bg2); border-radius: var(--rl); padding: 1.25rem 1.5rem; text-align: center; margin-bottom: 1.5rem; }
     .tlabel { font-size: 12px; color: var(--text2); margin-bottom: .35rem; }
-    .tval {
-      font-size: 44px; font-weight: 600;
-      letter-spacing: -.025em; line-height: 1;
-      color: var(--text);
-    }
-
-    /* ── Higher / Lower buttons ─────────────────────── */
+    .tval { font-size: 44px; font-weight: 600; letter-spacing: -.025em; line-height: 1; }
     .brow { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1.25rem; }
-    .gbtn {
-      padding: 14px 8px;
-      border-radius: var(--radius);
-      border: 1px solid var(--border2);
-      background: var(--bg);
-      font-size: 15px; font-weight: 500;
-      color: var(--text);
-      cursor: pointer; font-family: inherit;
-      transition: background .12s, opacity .12s, transform .1s;
-    }
+    .gbtn { padding: 14px 8px; border-radius: var(--r); border: 1px solid var(--border2); background: var(--bg); font-size: 15px; font-weight: 500; color: var(--text); cursor: pointer; font-family: inherit; transition: background .12s, opacity .12s, transform .1s; }
     .gbtn:hover:not(:disabled) { background: var(--bg2); }
     .gbtn:active:not(:disabled) { transform: scale(.98); }
-    .gbtn.ok { background: var(--green-bg); color: var(--green-tx); border-color: var(--green-bd); }
-    .gbtn.no { background: var(--red-bg);   color: var(--red-tx);   border-color: var(--red-bd); }
+    .gbtn.ok  { background: var(--green-bg); color: var(--green-tx); border-color: var(--green-bd); }
+    .gbtn.no  { background: var(--red-bg);   color: var(--red-tx);   border-color: var(--red-bd); }
     .gbtn.dim { opacity: .3; }
-
-    /* ── Reveal card ────────────────────────────────── */
-    .revcard {
-      background: var(--bg2);
-      border-radius: var(--radius-lg);
-      padding: 1.1rem 1.25rem;
-      margin-bottom: 1.25rem;
-      display: none;
-      animation: fadeUp .2s ease;
-    }
+    .revcard { background: var(--bg2); border-radius: var(--rl); padding: 1.1rem 1.25rem; margin-bottom: 1.25rem; display: none; animation: fadeUp .2s ease; }
     .revcard.show { display: block; }
     .revlabel { font-size: 12px; color: var(--text2); margin-bottom: .3rem; }
     .revnum { font-size: 28px; font-weight: 600; margin-bottom: .2rem; }
     .revsrc { font-size: 11.5px; color: var(--text3); }
-
-    /* ── Next button ────────────────────────────────── */
-    .nxtbtn {
-      width: 100%; padding: 14px;
-      border-radius: var(--radius);
-      border: none;
-      background: var(--text); color: var(--bg);
-      font-size: 15px; font-weight: 500;
-      cursor: pointer; font-family: inherit;
-      transition: opacity .15s;
-      display: none;
-    }
-    .nxtbtn:hover { opacity: .82; }
-    .nxtbtn.show { display: block; }
-
-    /* ── Primary / secondary buttons ───────────────── */
-    .btn-primary {
-      width: 100%; padding: 14px;
-      border-radius: var(--radius);
-      border: none;
-      background: var(--text); color: var(--bg);
-      font-size: 15px; font-weight: 500;
-      cursor: pointer; font-family: inherit;
-      transition: opacity .15s;
-      margin-bottom: .75rem;
-    }
+    .qcount { font-size: 13px; color: var(--text2); }
+    .btn-primary { width: 100%; padding: 14px; border-radius: var(--r); border: none; background: var(--text); color: var(--bg); font-size: 15px; font-weight: 500; cursor: pointer; font-family: inherit; transition: opacity .15s; margin-bottom: .75rem; }
     .btn-primary:hover { opacity: .82; }
     .btn-primary:disabled { opacity: .35; cursor: default; }
-
-    .btn-secondary {
-      width: 100%; padding: 12px;
-      border-radius: var(--radius);
-      border: 1px solid var(--border2);
-      background: transparent;
-      font-size: 14px; font-weight: 500; color: var(--text2);
-      cursor: pointer; font-family: inherit;
-      transition: background .12s;
-      margin-bottom: .75rem;
-    }
+    .btn-secondary { width: 100%; padding: 12px; border-radius: var(--r); border: 1px solid var(--border2); background: transparent; font-size: 14px; font-weight: 500; color: var(--text2); cursor: pointer; font-family: inherit; transition: background .12s; margin-bottom: .75rem; }
     .btn-secondary:hover { background: var(--bg2); }
-
-    /* ── Intro screen ───────────────────────────────── */
-    .intro-title {
-      font-size: 36px; font-weight: 700;
-      letter-spacing: -.03em; line-height: 1.1;
-      margin-bottom: .5rem;
-    }
-    .intro-sub {
-      font-size: 15px; color: var(--text2);
-      line-height: 1.6; margin-bottom: 1.75rem;
-    }
+    .nxtbtn { width: 100%; padding: 14px; border-radius: var(--r); border: none; background: var(--text); color: var(--bg); font-size: 15px; font-weight: 500; cursor: pointer; font-family: inherit; transition: opacity .15s; display: none; }
+    .nxtbtn:hover { opacity: .82; }
+    .nxtbtn.show { display: block; }
+    .user-chip { font-size: 12px; color: var(--text2); padding: 5px 11px; border-radius: 100px; border: 1px solid var(--border); background: transparent; cursor: pointer; font-family: inherit; transition: background .12s; white-space: nowrap; }
+    .user-chip:hover { background: var(--bg2); }
+    .intro-title { font-size: 36px; font-weight: 700; letter-spacing: -.03em; line-height: 1.1; margin-bottom: .5rem; }
+    .intro-sub { font-size: 15px; color: var(--text2); line-height: 1.6; margin-bottom: 1.75rem; }
     .how { display: flex; gap: 12px; align-items: flex-start; margin-bottom: .9rem; }
-    .hnum {
-      width: 22px; height: 22px; border-radius: 50%;
-      background: var(--bg3);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 11px; font-weight: 600; color: var(--text2);
-      flex-shrink: 0; margin-top: 2px;
-    }
+    .hnum { width: 22px; height: 22px; border-radius: 50%; background: var(--bg3); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: var(--text2); flex-shrink: 0; margin-top: 2px; }
     .htxt { font-size: 14px; color: var(--text2); line-height: 1.5; }
-
-    .daycard {
-      background: var(--bg2);
-      border-radius: var(--radius);
-      padding: .9rem 1rem;
-      margin-bottom: 1rem;
-    }
+    .daycard { background: var(--bg2); border-radius: var(--r); padding: .9rem 1rem; margin-bottom: 1rem; }
     .daycard-lbl { font-size: 11px; color: var(--text3); margin-bottom: 3px; }
     .daycard-val { font-size: 14px; font-weight: 500; }
-
-    /* ── Already-played card ────────────────────────── */
-    .already-card {
-      background: var(--bg2);
-      border-radius: var(--radius-lg);
-      padding: 1.25rem;
-      text-align: center;
-      margin-bottom: 1rem;
-      border: 1px solid var(--border);
-    }
+    .already-card { background: var(--bg2); border-radius: var(--rl); padding: 1.25rem; text-align: center; margin-bottom: 1rem; border: 1px solid var(--border); }
     .already-score { font-size: 36px; font-weight: 700; margin-bottom: .3rem; }
     .already-msg { font-size: 13px; color: var(--text2); }
-
-    /* ── User chip (top right when signed in) ────────── */
-    .user-chip {
-      font-size: 12px; color: var(--text2);
-      padding: 5px 11px;
-      border-radius: 100px;
-      border: 1px solid var(--border);
-      background: transparent;
-      cursor: pointer; font-family: inherit;
-      transition: background .12s;
-      white-space: nowrap;
-    }
-    .user-chip:hover { background: var(--bg2); }
-
-    /* ── Results screen ─────────────────────────────── */
-    .cscore {
-      font-size: 68px; font-weight: 700;
-      letter-spacing: -.04em; line-height: 1;
-      margin-bottom: .25rem;
-    }
-    .cmsg { font-size: 15px; color: var(--text2); margin-bottom: 1.5rem; }
-
+    .cscore { font-size: 68px; font-weight: 700; letter-spacing: -.04em; line-height: 1; margin-bottom: .25rem; }
+    .cmsg { font-size: 15px; color: var(--text2); margin-bottom: .4rem; }
+    .peer-msg { font-size: 13px; color: var(--text3); margin-bottom: 1.5rem; min-height: 18px; }
     .stat-row { display: flex; gap: 10px; margin-bottom: 1.5rem; }
-    .stat-pill {
-      flex: 1;
-      background: var(--bg2);
-      border-radius: var(--radius);
-      padding: .85rem .75rem;
-      text-align: center;
-    }
+    .stat-pill { flex: 1; background: var(--bg2); border-radius: var(--r); padding: .85rem .75rem; text-align: center; }
     .stat-num { font-size: 24px; font-weight: 600; line-height: 1; margin-bottom: 4px; }
     .stat-lbl { font-size: 10px; font-weight: 600; letter-spacing: .07em; color: var(--text3); text-transform: uppercase; }
-
-    /* ── Score distribution ─────────────────────────── */
     .dist-section { margin-bottom: 1.5rem; }
-    .dist-title {
-      font-size: 11px; font-weight: 600;
-      letter-spacing: .07em; text-transform: uppercase;
-      color: var(--text3); margin-bottom: .75rem;
-    }
-    .dist-row {
-      display: grid;
-      grid-template-columns: 16px 1fr 28px;
-      gap: 8px; align-items: center;
-      margin-bottom: 6px;
-    }
+    .dist-title { font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--text3); margin-bottom: .75rem; }
+    .dist-row { display: grid; grid-template-columns: 16px 1fr 28px; gap: 8px; align-items: center; margin-bottom: 6px; }
     .dist-label { font-size: 12px; font-weight: 600; color: var(--text2); text-align: center; }
-    .dist-bar-wrap {
-      height: 20px;
-      background: var(--bg3);
-      border-radius: 4px;
-      overflow: hidden;
-    }
-    .dist-bar {
-      height: 100%; border-radius: 4px;
-      background: var(--border2);
-      min-width: 0;
-      transition: width .7s ease;
-    }
+    .dist-bar-wrap { height: 20px; background: var(--bg3); border-radius: 4px; overflow: hidden; }
+    .dist-bar { height: 100%; border-radius: 4px; background: var(--border2); transition: width .7s ease; }
     .dist-bar.curr { background: var(--green-tx); }
     .dist-count { font-size: 12px; color: var(--text2); text-align: right; }
-
-    /* ── Emoji result blocks ────────────────────────── */
     .egrid { display: flex; gap: 6px; margin-bottom: 1rem; }
-    .eblock {
-      width: 42px; height: 42px;
-      border-radius: var(--radius);
-    }
+    .eblock { width: 42px; height: 42px; border-radius: var(--r); }
     .eblock.ok { background: var(--green-bg); }
     .eblock.no { background: var(--red-bg); }
-
-    /* ── Share box ──────────────────────────────────── */
-    .sharebox {
-      background: var(--bg2);
-      border-radius: var(--radius);
-      padding: 1rem 1.1rem;
-      font-family: 'SF Mono', 'Fira Mono', monospace;
-      font-size: 13px; line-height: 1.9;
-      color: var(--text);
-      white-space: pre;
-      margin-bottom: .75rem;
-    }
-    .copybtn {
-      width: 100%; padding: 12px;
-      border-radius: var(--radius);
-      border: 1px solid var(--border2);
-      background: var(--bg);
-      font-size: 14px; font-weight: 500; color: var(--text);
-      cursor: pointer; font-family: inherit;
-      transition: background .12s;
-      margin-bottom: 1.25rem;
-    }
+    .sharebox { background: var(--bg2); border-radius: var(--r); padding: 1rem 1.1rem; font-family: 'SF Mono','Fira Mono',monospace; font-size: 13px; line-height: 1.9; color: var(--text); white-space: pre; margin-bottom: .75rem; }
+    .copybtn { width: 100%; padding: 12px; border-radius: var(--r); border: 1px solid var(--border2); background: var(--bg); font-size: 14px; font-weight: 500; color: var(--text); cursor: pointer; font-family: inherit; transition: background .12s; margin-bottom: 1.25rem; }
     .copybtn:hover { background: var(--bg2); }
-
-    /* ── Sign-in CTA (finish screen) ─────────────────── */
-    .signin-cta {
-      border: 1px solid var(--border2);
-      border-radius: var(--radius-lg);
-      padding: 1rem 1.1rem;
-      margin-bottom: 1.5rem;
-      display: flex; gap: 12px; align-items: center;
-      cursor: pointer;
-      transition: background .12s;
-    }
+    .signin-cta { border: 1px solid var(--border2); border-radius: var(--rl); padding: 1rem 1.1rem; margin-bottom: 1.5rem; display: flex; gap: 12px; align-items: center; cursor: pointer; transition: background .12s; }
     .signin-cta:hover { background: var(--bg2); }
-    .cta-ico {
-      width: 38px; height: 38px; border-radius: 50%;
-      background: var(--bg3);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 14px; font-weight: 600; color: var(--text2);
-      flex-shrink: 0;
-    }
+    .cta-ico { width: 38px; height: 38px; border-radius: 50%; background: var(--bg3); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; color: var(--text2); flex-shrink: 0; }
     .cta-title { font-size: 14px; font-weight: 500; margin-bottom: 2px; }
     .cta-sub { font-size: 12px; color: var(--text2); }
-
-    /* ── Synced badge ───────────────────────────────── */
-    .synced-badge {
-      display: flex; align-items: center; gap: 8px;
-      background: var(--green-bg);
-      border-radius: var(--radius);
-      padding: .75rem 1rem;
-      margin-bottom: 1.5rem;
-      font-size: 13px; font-weight: 500;
-      color: var(--green-tx);
-    }
-    .synced-dot {
-      width: 7px; height: 7px; border-radius: 50%;
-      background: var(--green-tx); flex-shrink: 0;
-    }
-
-    /* ── Question review ────────────────────────────── */
+    .synced-badge { display: flex; align-items: center; gap: 8px; background: var(--green-bg); border-radius: var(--r); padding: .75rem 1rem; margin-bottom: 1.5rem; font-size: 13px; font-weight: 500; color: var(--green-tx); }
+    .synced-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green-tx); flex-shrink: 0; }
     .rev-section { border-top: 1px solid var(--border); padding-top: 1.25rem; }
-    .rev-hdr {
-      font-size: 11px; font-weight: 600;
-      letter-spacing: .07em; text-transform: uppercase;
-      color: var(--text3); margin-bottom: .75rem;
-    }
-    .ritem {
-      display: grid; grid-template-columns: 16px 1fr;
-      gap: 10px; align-items: start;
-      padding: .85rem 0;
-      border-top: 1px solid var(--border);
-    }
-    .rico {
-      width: 14px; height: 14px; border-radius: 50%;
-      margin-top: 3px; flex-shrink: 0;
-    }
+    .rev-hdr { font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--text3); margin-bottom: .75rem; }
+    .ritem { display: grid; grid-template-columns: 16px 1fr; gap: 10px; align-items: start; padding: .85rem 0; border-top: 1px solid var(--border); }
+    .rico { width: 14px; height: 14px; border-radius: 50%; margin-top: 3px; flex-shrink: 0; }
     .rico.ok { background: var(--green-bg); outline: 2px solid var(--green-bd); }
-    .rico.no { background: var(--red-bg);   outline: 2px solid var(--red-bd); }
+    .rico.no { background: var(--red-bg); outline: 2px solid var(--red-bd); }
     .rq { font-size: 13px; color: var(--text2); margin-bottom: 4px; line-height: 1.4; }
     .ra { font-size: 14px; font-weight: 500; }
     .rsrc { font-weight: 400; color: var(--text3); }
-
-    /* ── Sign-in screen ─────────────────────────────── */
-    .back-link {
-      font-size: 13px; color: var(--text2);
-      background: none; border: none;
-      cursor: pointer; font-family: inherit;
-      padding: 0; margin-bottom: 1.5rem;
-      text-align: left;
-    }
+    .back-link { font-size: 13px; color: var(--text2); background: none; border: none; cursor: pointer; font-family: inherit; padding: 0; margin-bottom: 1.5rem; text-align: left; }
     .back-link:hover { color: var(--text); }
-    .si-title {
-      font-size: 26px; font-weight: 700;
-      letter-spacing: -.02em; margin-bottom: .4rem;
-    }
-    .si-sub {
-      font-size: 14px; color: var(--text2);
-      line-height: 1.55; margin-bottom: 1.5rem;
-    }
+    .si-title { font-size: 26px; font-weight: 700; letter-spacing: -.02em; margin-bottom: .4rem; }
+    .si-sub { font-size: 14px; color: var(--text2); line-height: 1.55; margin-bottom: 1.5rem; }
     .si-feat { display: flex; gap: 10px; align-items: flex-start; margin-bottom: .85rem; }
-    .si-dot {
-      width: 6px; height: 6px; border-radius: 50%;
-      background: var(--text3); flex-shrink: 0; margin-top: 6px;
-    }
+    .si-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text3); flex-shrink: 0; margin-top: 6px; }
     .si-ftxt { font-size: 14px; color: var(--text2); line-height: 1.4; }
     .fi { margin-bottom: .9rem; }
     .fi label { display: block; font-size: 12px; color: var(--text2); margin-bottom: .3rem; }
-    .fi input {
-      width: 100%; padding: 10px 12px;
-      border-radius: var(--radius);
-      border: 1px solid var(--border2);
-      background: var(--bg);
-      font-size: 14px; font-family: inherit; color: var(--text);
-      outline: none;
-    }
+    .fi input { width: 100%; padding: 10px 12px; border-radius: var(--r); border: 1px solid var(--border2); background: var(--bg); font-size: 14px; font-family: inherit; color: var(--text); outline: none; }
     .fi input:focus { border-color: var(--text2); }
-    .or-row {
-      display: flex; align-items: center; gap: 10px;
-      margin: 1rem 0;
-      font-size: 12px; color: var(--text3);
-    }
-    .or-row::before, .or-row::after {
-      content: ''; flex: 1;
-      height: 1px; background: var(--border);
-    }
-    .si-note {
-      font-size: 11.5px; color: var(--text3);
-      text-align: center; margin-top: .85rem; line-height: 1.5;
-    }
-    .si-error {
-      font-size: 13px; color: var(--red-tx);
-      background: var(--red-bg);
-      border-radius: var(--radius);
-      padding: .75rem 1rem;
-      margin-bottom: .85rem;
-      display: none;
-    }
-    .qcount { font-size: 13px; color: var(--text2); }
-
-    /* ── Loading state ──────────────────────────────── */
-    .loading-msg {
-      font-size: 14px; color: var(--text2);
-      text-align: center; padding: 2rem 0;
-    }
-
-    .peer-msg {
-      font-size: 13px;
-      color: var(--text3);
-      margin-bottom: 1.5rem;
-      margin-top: -.75rem;
-      min-height: 18px;
-    }
-
-    /* ── Animations ─────────────────────────────────── */
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(6px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
+    .or-row { display: flex; align-items: center; gap: 10px; margin: 1rem 0; font-size: 12px; color: var(--text3); }
+    .or-row::before, .or-row::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .si-note { font-size: 11.5px; color: var(--text3); text-align: center; margin-top: .85rem; line-height: 1.5; }
+    .si-msg { font-size: 13px; border-radius: var(--r); padding: .75rem 1rem; margin-bottom: .85rem; display: none; }
+    .si-msg.error   { color: var(--red-tx);   background: var(--red-bg); }
+    .si-msg.success { color: var(--green-tx); background: var(--green-bg); }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
   </style>
 </head>
 <body>
 <div class="pg">
 
-  <!-- ═══════════════════════════════════════════════ -->
-  <!-- INTRO SCREEN                                    -->
-  <!-- ═══════════════════════════════════════════════ -->
+  <!-- INTRO -->
   <div class="screen active" id="s-intro">
     <div class="hdr">
       <div class="logo">Pop<em>Guess</em></div>
       <div id="intro-auth-el"></div>
     </div>
-
     <div class="intro-title">Test your<br>instincts.</div>
     <div class="intro-sub">Each day, 5 real-world statistics — guess whether the true answer is higher or lower.</div>
-
     <div class="how"><div class="hnum">1</div><div class="htxt">A statistic is shown with a key number hidden</div></div>
     <div class="how"><div class="hnum">2</div><div class="htxt">Guess higher or lower than the number shown</div></div>
     <div class="how"><div class="hnum">3</div><div class="htxt">See the real answer, then share your score</div></div>
-
     <div style="height:1.25rem"></div>
-
     <div class="daycard">
       <div class="daycard-lbl" id="day-game-lbl">Today's game</div>
       <div class="daycard-val" id="day-date-lbl">Loading…</div>
     </div>
-
     <div id="already-wrap" style="display:none">
       <div class="already-card">
         <div class="already-score" id="already-score-lbl"></div>
         <div class="already-msg">You've already played today. Come back tomorrow!</div>
       </div>
-      <button class="btn-secondary" style="margin-top:.75rem">View my stats</button>
+      <button class="btn-secondary" id="show-stats-btn" style="margin-top:.75rem">View my stats</button>
     </div>
-
     <button class="btn-primary" id="play-btn">Play today's game</button>
     <button class="btn-secondary" id="intro-si-btn">Sign in to sync your streak</button>
   </div>
 
-  <!-- ═══════════════════════════════════════════════ -->
-  <!-- GAME SCREEN                                     -->
-  <!-- ═══════════════════════════════════════════════ -->
+  <!-- GAME -->
   <div class="screen" id="s-game">
     <div class="hdr">
       <div class="logo">Pop<em>Guess</em></div>
       <div class="qcount" id="qcnt">1 / 5</div>
     </div>
-
     <div class="progress"><div class="pf" id="pfill" style="width:0%"></div></div>
-
     <div class="dots">
-      <div class="dot" id="d0"></div>
-      <div class="dot" id="d1"></div>
-      <div class="dot" id="d2"></div>
-      <div class="dot" id="d3"></div>
-      <div class="dot" id="d4"></div>
+      <div class="dot" id="d0"></div><div class="dot" id="d1"></div>
+      <div class="dot" id="d2"></div><div class="dot" id="d3"></div><div class="dot" id="d4"></div>
     </div>
-
     <div class="cat" id="qcat"></div>
     <div class="qtext" id="qtext"></div>
-
     <div class="tcard">
       <div class="tlabel">Is the real answer higher or lower than</div>
       <div class="tval" id="qthr"></div>
     </div>
-
     <div class="brow">
       <button class="gbtn" id="bhi">↑ Higher</button>
       <button class="gbtn" id="blo">↓ Lower</button>
     </div>
-
     <div class="revcard" id="rev">
       <div class="revlabel">The actual answer</div>
       <div class="revnum" id="revnum"></div>
       <div class="revsrc" id="revsrc"></div>
     </div>
-
-    <button class="nxtbtn" id="nxtbtn" >Next question →</button>
+    <button class="nxtbtn" id="nxtbtn">Next question →</button>
   </div>
 
-  <!-- ═══════════════════════════════════════════════ -->
-  <!-- RESULTS SCREEN                                  -->
-  <!-- ═══════════════════════════════════════════════ -->
+  <!-- RESULTS -->
   <div class="screen" id="s-done">
     <div class="hdr">
       <div class="logo">Pop<em>Guess</em></div>
       <div id="done-auth-el"></div>
     </div>
-
     <div class="cscore" id="cscore"></div>
     <div class="cmsg" id="cmsg"></div>
     <div class="peer-msg" id="peer-msg"></div>
-
     <div class="stat-row">
-      <div class="stat-pill">
-        <div class="stat-num" id="streak-num">—</div>
-        <div class="stat-lbl">Streak</div>
-      </div>
-      <div class="stat-pill">
-        <div class="stat-num" id="played-num">—</div>
-        <div class="stat-lbl">Played</div>
-      </div>
-      <div class="stat-pill">
-        <div class="stat-num" id="avg-num">—</div>
-        <div class="stat-lbl">Avg score</div>
-      </div>
+      <div class="stat-pill"><div class="stat-num" id="streak-num">—</div><div class="stat-lbl">Streak</div></div>
+      <div class="stat-pill"><div class="stat-num" id="played-num">—</div><div class="stat-lbl">Played</div></div>
+      <div class="stat-pill"><div class="stat-num" id="avg-num">—</div><div class="stat-lbl">Avg score</div></div>
     </div>
-
     <div class="dist-section">
       <div class="dist-title">Score distribution</div>
       <div id="dist-chart"></div>
     </div>
-
     <div class="egrid" id="egrid"></div>
     <div class="sharebox" id="sharebox"></div>
     <button class="copybtn" id="copybtn">Copy results</button>
-
     <div id="done-auth-cta"></div>
-
     <div class="rev-section">
       <div class="rev-hdr">Question review</div>
       <div id="review"></div>
     </div>
   </div>
 
-  <!-- ═══════════════════════════════════════════════ -->
-  <!-- SIGN-IN SCREEN                                  -->
-  <!-- ═══════════════════════════════════════════════ -->
+  <!-- SIGN IN -->
   <div class="screen" id="s-signin">
-    <button class="back-link">← Back</button>
-    <button class="btn-primary" style="margin-top:.5rem">Sign in / Create account</button>
-    <button class="btn-secondary">Continue with Google</button>
-
+    <button class="back-link" id="si-back">← Back</button>
+    <div class="si-title">Sign in to<br>PopGuess</div>
+    <div class="si-sub">Save your streak and score history across all your devices.</div>
+    <div class="si-feat"><div class="si-dot"></div><div class="si-ftxt">Streak synced — never lose your progress</div></div>
+    <div class="si-feat"><div class="si-dot"></div><div class="si-ftxt">Full score history and distribution chart</div></div>
+    <div class="si-feat"><div class="si-dot"></div><div class="si-ftxt">Leaderboard with friends (coming soon)</div></div>
     <div style="height:1rem"></div>
-
     <div class="fi"><label>Email</label><input type="email" id="si-email" placeholder="you@example.com" /></div>
     <div class="fi"><label>Password</label><input type="password" id="si-pw" placeholder="••••••••" /></div>
-
-    <div class="si-error" id="si-error"></div>
-
-    <button class="btn-primary" style="margin-top:.5rem" onclick="doSignIn()">Sign in / Create account</button>
+    <div class="si-msg" id="si-msg"></div>
+    <button class="btn-primary" id="si-submit" style="margin-top:.5rem">Sign in / Create account</button>
     <div class="or-row">or</div>
-    <button class="btn-secondary" onclick="doGoogleSignIn()">Continue with Google</button>
+    <button class="btn-secondary" id="si-google">Continue with Google</button>
     <div class="si-note">New here? Entering your email creates an account automatically.</div>
   </div>
 
 </div>
-
 <script>
-// ═══════════════════════════════════════════════════════
-// CONFIG
-// ═══════════════════════════════════════════════════════
+// ── CONFIG ───────────────────────────────────────────
 const SUPABASE_URL = 'https://sjwbcmnjzuxhnxesvdjr.supabase.co'
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqd2JjbW5qenV4aG54ZXN2ZGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4ODQ1MTUsImV4cCI6MjA4OTQ2MDUxNX0.HFR3MRqg3xeaMJEPkCK7b_hhD8hkWFCsWAoipww_0jU'
 
-// ═══════════════════════════════════════════════════════
-// SUPABASE CLIENT
-// ═══════════════════════════════════════════════════════
+// ── SUPABASE CLIENT ──────────────────────────────────
 const { createClient } = supabase
 const db = createClient(SUPABASE_URL, SUPABASE_KEY, {
-  auth: {
-    detectSessionInUrl: true,
-    autoRefreshToken: true,
-    persistSession: true
-  }
+  auth: { detectSessionInUrl: true, autoRefreshToken: true, persistSession: true }
 })
 
-// ═══════════════════════════════════════════════════════
-// FALLBACK QUESTIONS (if DB has nothing for today)
-// ═══════════════════════════════════════════════════════
-const FALLBACK_QUESTIONS = [
-  { category:'Technology', question:'How many times does the average American check their phone each day?', threshold_display:'120 times', answer_display:'96 times', source:'Asurion Research, 2023', direction:'lower' },
-  { category:'Nature',     question:"What percentage of Earth's oceans remain unexplored by humans?",        threshold_display:'50%',              answer_display:'~80%',           source:'NOAA',                             direction:'higher' },
-  { category:'Culture',    question:'How many languages are actively spoken in Papua New Guinea?',           threshold_display:'600 languages',    answer_display:'~840 languages', source:'Ethnologue',                       direction:'higher' },
-  { category:'Earth',      question:"What percentage of the world's freshwater is locked in glaciers?",      threshold_display:'80%',              answer_display:'~69%',           source:'U.S. Geological Survey',           direction:'lower'  },
-  { category:'Food',       question:'How many hot dogs (millions) are eaten in the US on Independence Day?', threshold_display:'75 million',       answer_display:'150 million',    source:'National Hot Dog & Sausage Council',direction:'higher' },
+// ── FALLBACK QUESTIONS ───────────────────────────────
+const FALLBACK = [
+  { category:'Technology', question:'How many times does the average American check their phone each day?',  threshold_display:'120 times',    answer_display:'96 times',       source:'Asurion Research, 2023',             direction:'lower'  },
+  { category:'Nature',     question:"What percentage of Earth's oceans remain unexplored by humans?",         threshold_display:'50%',           answer_display:'~80%',           source:'NOAA',                               direction:'higher' },
+  { category:'Culture',    question:'How many languages are actively spoken in Papua New Guinea?',            threshold_display:'600 languages', answer_display:'~840 languages', source:'Ethnologue',                         direction:'higher' },
+  { category:'Earth',      question:"What percentage of the world's freshwater is locked in glaciers?",       threshold_display:'80%',           answer_display:'~69%',           source:'U.S. Geological Survey',             direction:'lower'  },
+  { category:'Food',       question:'How many hot dogs (millions) are eaten in the US on Independence Day?',  threshold_display:'75 million',    answer_display:'150 million',    source:'National Hot Dog & Sausage Council', direction:'higher' },
 ]
 
-// ═══════════════════════════════════════════════════════
-// GAME STATE
-// ═══════════════════════════════════════════════════════
+// ── GAME STATE ───────────────────────────────────────
 let questions   = []
 let ci          = 0
 let results     = []
@@ -665,221 +293,155 @@ let siFrom      = 'intro'
 let currentUser = null
 let finalScore  = 0
 
-// ═══════════════════════════════════════════════════════
-// DATE HELPERS
-// ═══════════════════════════════════════════════════════
+// ── DATE ─────────────────────────────────────────────
 function todayKey() {
   const d = new Date()
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
 }
-
 function dayNum() {
-  const d = new Date()
-  const today = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
-  return Math.floor((new Date(today) - new Date('2026-03-18')) / 86400000) + 1
+  return Math.floor((new Date(todayKey()) - new Date('2026-03-18')) / 86400000) + 1
 }
 
-// ═══════════════════════════════════════════════════════
-// UI HELPERS
-// ═══════════════════════════════════════════════════════
+// ── UI ────────────────────────────────────────────────
 function show(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'))
   document.getElementById(id).classList.add('active')
 }
 
-// Safe button helper — sets text, disabled state, and replaces onclick cleanly
-function setBtn(id, text, disabled, handler) {
-  const btn = document.getElementById(id)
-  if (!btn) return
-  btn.textContent = text
-  btn.disabled = disabled
-  // Remove all existing listeners by cloning
-  const fresh = btn.cloneNode(true)
-  btn.parentNode.replaceChild(fresh, btn)
-  if (handler) fresh.addEventListener('click', handler)
-}
+// ── LOCAL STORAGE ─────────────────────────────────────
+function playedToday() { return localStorage.getItem('pg_last_played') === todayKey() }
 
-// ═══════════════════════════════════════════════════════
-// LOCAL STORAGE
-// ═══════════════════════════════════════════════════════
-function playedToday() {
-  return localStorage.getItem('pg_last_played') === todayKey()
-}
-
-function getLocalStats() {
+function getLocal() {
   return {
-    lastPlayed: localStorage.getItem('pg_last_played') || '',
     streak:     parseInt(localStorage.getItem('pg_streak')     || '0'),
-    dist:       JSON.parse(localStorage.getItem('pg_score_dist')|| '[0,0,0,0,0,0]'),
+    dist:       JSON.parse(localStorage.getItem('pg_dist')     || '[0,0,0,0,0,0]'),
     plays:      parseInt(localStorage.getItem('pg_plays')      || '0'),
-    totalScore: parseInt(localStorage.getItem('pg_total_score')|| '0'),
+    totalScore: parseInt(localStorage.getItem('pg_total')      || '0'),
     lastScore:  parseInt(localStorage.getItem('pg_last_score') || '0'),
+    lastPlayed: localStorage.getItem('pg_last_played')         || '',
   }
 }
 
-function saveLocalStats(score, answers = []) {
-  const s = getLocalStats()
-  const yest = new Date()
-  yest.setDate(yest.getDate() - 1)
+function saveLocal(score, answers) {
+  const s    = getLocal()
+  const yest = new Date(); yest.setDate(yest.getDate() - 1)
   const yKey = `${yest.getFullYear()}-${String(yest.getMonth()+1).padStart(2,'0')}-${String(yest.getDate()).padStart(2,'0')}`
-
-  let streak
-  if      (s.lastPlayed === yKey)      streak = s.streak + 1
-  else if (s.lastPlayed === todayKey()) streak = s.streak
-  else                                  streak = 1
-
-  const dist = s.dist
-  dist[score]++
-  localStorage.setItem('pg_last_played',    todayKey())
-  localStorage.setItem('pg_streak',         streak)
-  localStorage.setItem('pg_score_dist',     JSON.stringify(dist))
-  localStorage.setItem('pg_plays',          s.plays + 1)
-  localStorage.setItem('pg_total_score',    s.totalScore + score)
-  localStorage.setItem('pg_last_score',     score)
-  localStorage.setItem('pg_last_answers',   JSON.stringify(answers))
+  const streak = s.lastPlayed === yKey ? s.streak + 1 : s.lastPlayed === todayKey() ? s.streak : 1
+  const dist   = s.dist; dist[score]++
+  localStorage.setItem('pg_last_played', todayKey())
+  localStorage.setItem('pg_streak',      streak)
+  localStorage.setItem('pg_dist',        JSON.stringify(dist))
+  localStorage.setItem('pg_plays',       s.plays + 1)
+  localStorage.setItem('pg_total',       s.totalScore + score)
+  localStorage.setItem('pg_last_score',  score)
+  localStorage.setItem('pg_last_ans',    JSON.stringify(answers))
   return streak
 }
 
-// In-progress game persistence
 function saveProgress() {
-  localStorage.setItem('pg_progress_date',      todayKey())
-  localStorage.setItem('pg_progress_ci',        ci)
-  localStorage.setItem('pg_progress_results',   JSON.stringify(results))
-  localStorage.setItem('pg_progress_questions', JSON.stringify(questions))
+  localStorage.setItem('pg_prog_date', todayKey())
+  localStorage.setItem('pg_prog_ci',   ci)
+  localStorage.setItem('pg_prog_res',  JSON.stringify(results))
+  localStorage.setItem('pg_prog_qs',   JSON.stringify(questions))
 }
 function clearProgress() {
-  ['pg_progress_date','pg_progress_ci','pg_progress_results','pg_progress_questions']
-    .forEach(k => localStorage.removeItem(k))
+  ['pg_prog_date','pg_prog_ci','pg_prog_res','pg_prog_qs'].forEach(k => localStorage.removeItem(k))
 }
-function hasProgressToday() {
-  return localStorage.getItem('pg_progress_date') === todayKey()
-    && localStorage.getItem('pg_progress_ci') !== null
+function hasProgress() {
+  return localStorage.getItem('pg_prog_date') === todayKey()
+    && localStorage.getItem('pg_prog_ci') !== null
     && !playedToday()
 }
 
-// ═══════════════════════════════════════════════════════
-// SUPABASE DATA
-// ═══════════════════════════════════════════════════════
-async function fetchTodaysQuestions() {
-  const { data, error } = await db
-    .from('questions').select('*')
-    .eq('play_date', todayKey())
-    .order('sort_order', { ascending: true })
-  if (error || !data || data.length === 0) {
-    console.warn('No questions in DB for today, using fallback.')
-    return FALLBACK_QUESTIONS
-  }
+// ── SUPABASE DATA ─────────────────────────────────────
+async function fetchQuestions() {
+  const { data, error } = await db.from('questions').select('*')
+    .eq('play_date', todayKey()).order('sort_order', { ascending: true })
+  if (error || !data || !data.length) { console.warn('Using fallback questions'); return FALLBACK }
   return data
 }
 
-async function savePlayToSupabase(score, answers) {
-  const payload = { play_date: todayKey(), score, answers, user_id: currentUser?.id ?? null }
+async function savePlay(score, answers) {
+  const row = { play_date: todayKey(), score, answers, user_id: currentUser?.id ?? null }
   if (currentUser) {
-    const { error } = await db.from('plays').upsert(payload, { onConflict: 'user_id,play_date', ignoreDuplicates: true })
-    if (error) console.error('Save play error:', error.message)
+    const { error } = await db.from('plays').upsert(row, { onConflict: 'user_id,play_date', ignoreDuplicates: true })
+    if (error) console.error('savePlay:', error.message)
   } else {
-    const { error } = await db.from('plays').insert(payload)
-    if (error) console.error('Save anon play error:', error.message)
+    const { error } = await db.from('plays').insert(row)
+    if (error) console.error('saveAnonPlay:', error.message)
   }
 }
 
-async function loadSupabaseStats() {
+async function fetchSupabaseStats() {
   if (!currentUser) return null
-  const { data: plays, error } = await db
-    .from('plays').select('play_date, score')
-    .eq('user_id', currentUser.id)
-    .order('play_date', { ascending: false })
-  if (error || !plays) return null
-
-  const dist = [0,0,0,0,0,0]
-  plays.forEach(p => dist[p.score]++)
-
+  const { data, error } = await db.from('plays').select('play_date,score')
+    .eq('user_id', currentUser.id).order('play_date', { ascending: false })
+  if (error || !data) return null
+  const dist = [0,0,0,0,0,0]; data.forEach(p => dist[p.score]++)
   let streak = 0
-  for (let i = 0; i < plays.length; i++) {
-    const exp = new Date()
-    exp.setDate(exp.getDate() - i)
-    const expKey = `${exp.getFullYear()}-${String(exp.getMonth()+1).padStart(2,'0')}-${String(exp.getDate()).padStart(2,'0')}`
-    if (plays[i].play_date === expKey) streak++
-    else break
+  for (let i = 0; i < data.length; i++) {
+    const e = new Date(); e.setDate(e.getDate() - i)
+    const ek = `${e.getFullYear()}-${String(e.getMonth()+1).padStart(2,'0')}-${String(e.getDate()).padStart(2,'0')}`
+    if (data[i].play_date === ek) streak++; else break
   }
-  const total = plays.reduce((s, p) => s + p.score, 0)
-  return { dist, streak, plays: plays.length, avg: plays.length > 0 ? (total/plays.length).toFixed(1) : '—' }
+  const tot = data.reduce((s, p) => s + p.score, 0)
+  return { dist, streak, plays: data.length, avg: data.length ? (tot/data.length).toFixed(1) : '—' }
 }
 
-async function getScorePercentageToday(score) {
+async function fetchPeerPct(score) {
   const { data, error } = await db.rpc('get_score_distribution_today', { p_date: todayKey() })
-  if (error || !data || data.length === 0) return null
-  const total    = data.reduce((s, r) => s + parseInt(r.count), 0)
-  const matching = data.find(r => r.score === score)
-  if (!matching || total === 0) return null
-  return { pct: Math.round((parseInt(matching.count) / total) * 100), total }
+  if (error || !data || !data.length) return null
+  const total = data.reduce((s, r) => s + parseInt(r.count), 0)
+  const match = data.find(r => r.score === score)
+  if (!match || !total) return null
+  return { pct: Math.round(parseInt(match.count) / total * 100), total }
 }
 
-// ═══════════════════════════════════════════════════════
-// AUTH
-// ═══════════════════════════════════════════════════════
+// ── AUTH ──────────────────────────────────────────────
 function goSignIn(from) {
   siFrom = from
-  document.getElementById('si-error').style.display = 'none'
+  const msg = document.getElementById('si-msg')
+  msg.style.display = 'none'; msg.className = 'si-msg'
   show('s-signin')
 }
 
 function goBack() {
   show('s-' + siFrom)
   if (siFrom === 'intro') renderIntro()
-  if (siFrom === 'done')  renderDoneAuthArea()
-}
-
-async function signOut() {
-  await db.auth.signOut()
-  // onAuthStateChange fires SIGNED_OUT → renderIntro() runs automatically
+  if (siFrom === 'done')  renderDoneAuth()
 }
 
 async function doSignIn() {
   const email = document.getElementById('si-email').value.trim()
   const pw    = document.getElementById('si-pw').value.trim()
-  const errEl = document.getElementById('si-error')
-  const btn   = document.querySelector('#s-signin .btn-primary')
+  const btn   = document.getElementById('si-submit')
 
-  errEl.style.display = 'none'
-  errEl.style.background = 'var(--red-bg)'
-  errEl.style.color = 'var(--red-tx)'
+  if (!email)      { showMsg('Please enter your email.', 'error'); return }
+  if (pw.length<6) { showMsg('Password must be at least 6 characters.', 'error'); return }
 
-  if (!email) { errEl.textContent = 'Please enter your email.'; errEl.style.display = 'block'; return }
-  if (!pw || pw.length < 6) { errEl.textContent = 'Password must be at least 6 characters.'; errEl.style.display = 'block'; return }
-
-  btn.textContent = 'Signing in…'
-  btn.disabled = true
+  btn.textContent = 'Signing in…'; btn.disabled = true
 
   // Try sign in first
-  const { data: siData, error: siErr } = await db.auth.signInWithPassword({ email, password: pw })
+  const { error: siErr } = await db.auth.signInWithPassword({ email, password: pw })
   if (!siErr) {
-    // onAuthStateChange handles the rest
-    btn.textContent = 'Sign in / Create account'
-    btn.disabled = false
+    btn.textContent = 'Sign in / Create account'; btn.disabled = false
+    // onAuthStateChange fires SIGNED_IN and handles navigation
     return
   }
 
-  // If sign in failed, try sign up — if signup says "already registered" it means wrong password
+  // Sign in failed — try creating account
   const { data: suData, error: suErr } = await db.auth.signUp({ email, password: pw })
-  btn.textContent = 'Sign in / Create account'
-  btn.disabled = false
+  btn.textContent = 'Sign in / Create account'; btn.disabled = false
 
   if (suErr) {
     const m = suErr.message.toLowerCase()
-    errEl.textContent = (m.includes('already') || m.includes('registered') || m.includes('exists'))
-      ? 'Wrong password for this email. Try again.'
-      : suErr.message
-    errEl.style.display = 'block'
+    showMsg(m.includes('already') || m.includes('registered') ? 'Wrong password. Try again.' : suErr.message, 'error')
     return
   }
   if (suData.user && !suData.session) {
-    errEl.style.background = 'var(--green-bg)'
-    errEl.style.color = 'var(--green-tx)'
-    errEl.textContent = 'Account created! Check your email to confirm, then sign in.'
-    errEl.style.display = 'block'
+    showMsg('Account created! Check your email to confirm, then sign in.', 'success')
   }
-  // If session exists, onAuthStateChange handles navigation
+  // If session exists onAuthStateChange fires SIGNED_IN and navigates
 }
 
 async function doGoogleSignIn() {
@@ -887,146 +449,215 @@ async function doGoogleSignIn() {
     provider: 'google',
     options: { redirectTo: window.location.href }
   })
-  if (error) console.error('Google OAuth error:', error.message)
+  if (error) showMsg(error.message, 'error')
 }
 
-// ═══════════════════════════════════════════════════════
-// INTRO SCREEN
-// ═══════════════════════════════════════════════════════
+async function doSignOut() {
+  await db.auth.signOut()
+  // onAuthStateChange fires SIGNED_OUT → renderIntro() runs automatically
+}
+
+function showMsg(text, type) {
+  const el = document.getElementById('si-msg')
+  el.textContent = text; el.className = `si-msg ${type}`; el.style.display = 'block'
+}
+
+// ── RENDER: INTRO ─────────────────────────────────────
 async function renderIntro() {
   const today = new Date().toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' })
   document.getElementById('day-date-lbl').textContent = `5 questions · ${today}`
   document.getElementById('day-game-lbl').textContent = `Today's game · #${dayNum()}`
 
-  // Auth chip — always rebuild from scratch to avoid stale listeners
+  // Rebuild auth chip completely (no stale listeners)
   const authEl = document.getElementById('intro-auth-el')
-  const siBtn  = document.getElementById('intro-si-btn')
   authEl.innerHTML = ''
-
   if (currentUser) {
     const chip = document.createElement('button')
     chip.className = 'user-chip'
     chip.textContent = `${currentUser.email.split('@')[0]} · Sign out`
-    chip.addEventListener('click', signOut)
+    chip.addEventListener('click', doSignOut)
     authEl.appendChild(chip)
-    siBtn.style.display = 'none'
+    document.getElementById('intro-si-btn').style.display = 'none'
   } else {
-    siBtn.style.display = 'block'
+    document.getElementById('intro-si-btn').style.display = 'block'
   }
 
-  // Check if already played (remote for signed-in users, local for guests)
-  let alreadyPlayed = playedToday()
-  let lastScore = getLocalStats().lastScore
+  // Check played state
+  let played = playedToday(), lastScore = getLocal().lastScore
 
-  if (currentUser && !alreadyPlayed) {
-    const { data } = await db.from('plays').select('score, answers')
-      .eq('user_id', currentUser.id).eq('play_date', todayKey())
-      .limit(1).maybeSingle()
+  if (currentUser && !played) {
+    const { data } = await db.from('plays').select('score,answers')
+      .eq('user_id', currentUser.id).eq('play_date', todayKey()).limit(1).maybeSingle()
     if (data) {
-      alreadyPlayed = true
-      lastScore = data.score
+      played = true; lastScore = data.score
       localStorage.setItem('pg_last_played', todayKey())
-      localStorage.setItem('pg_last_score', data.score)
-      if (data.answers) localStorage.setItem('pg_last_answers', JSON.stringify(data.answers))
+      localStorage.setItem('pg_last_score',  data.score)
+      if (data.answers) localStorage.setItem('pg_last_ans', JSON.stringify(data.answers))
     }
   }
 
-  // Set play button state — always use setBtn to clear stale listeners
+  // Clone play button to wipe any old event listeners
+  const oldBtn = document.getElementById('play-btn')
+  const newBtn = oldBtn.cloneNode(true)
+  oldBtn.parentNode.replaceChild(newBtn, oldBtn)
   document.getElementById('already-wrap').style.display = 'none'
 
-  if (alreadyPlayed) {
-    setBtn('play-btn', 'Come back tomorrow', true, null)
+  if (played) {
+    newBtn.textContent = 'Come back tomorrow'
+    newBtn.disabled    = true
     document.getElementById('already-wrap').style.display = 'block'
     document.getElementById('already-score-lbl').textContent = `${lastScore}/5`
-  } else if (hasProgressToday()) {
-    setBtn('play-btn', 'Resume puzzle', false, resumeGame)
+  } else if (hasProgress()) {
+    newBtn.textContent = 'Resume puzzle'
+    newBtn.disabled    = false
+    newBtn.addEventListener('click', resumeGame)
   } else {
-    setBtn('play-btn', "Play today's game", false, startGame)
+    newBtn.textContent = "Play today's game"
+    newBtn.disabled    = false
+    newBtn.addEventListener('click', startGame)
   }
 }
 
-// ═══════════════════════════════════════════════════════
-// DONE SCREEN AUTH AREAS
-// ═══════════════════════════════════════════════════════
-function renderDoneAuthArea() {
-  // Top-right chip
+// ── RENDER: DONE SCREEN AUTH ──────────────────────────
+function renderDoneAuth() {
   const topEl = document.getElementById('done-auth-el')
   topEl.innerHTML = ''
   if (currentUser) {
     const chip = document.createElement('button')
     chip.className = 'user-chip'
     chip.textContent = `${currentUser.email.split('@')[0]} · Sign out`
-    chip.addEventListener('click', signOut)
+    chip.addEventListener('click', doSignOut)
     topEl.appendChild(chip)
   }
-
-  // Bottom CTA / synced badge
   const ctaEl = document.getElementById('done-auth-cta')
   if (currentUser) {
     ctaEl.innerHTML = `<div class="synced-badge"><div class="synced-dot"></div>Stats synced to ${currentUser.email}</div>`
   } else {
-    ctaEl.innerHTML = `
-      <div class="signin-cta" id="done-signin-cta">
-        <div class="cta-ico">↗</div>
-        <div style="flex:1">
-          <div class="cta-title">Sign in to sync your stats</div>
-          <div class="cta-sub">Keep your streak and history across devices</div>
-        </div>
-      </div>`
-    document.getElementById('done-signin-cta').addEventListener('click', () => goSignIn('done'))
+    ctaEl.innerHTML = `<div class="signin-cta" id="done-si-cta"><div class="cta-ico">↗</div><div style="flex:1"><div class="cta-title">Sign in to sync your stats</div><div class="cta-sub">Keep your streak and history across devices</div></div></div>`
+    document.getElementById('done-si-cta').addEventListener('click', () => goSignIn('done'))
   }
 }
 
-// ═══════════════════════════════════════════════════════
-// GAME FLOW
-// ═══════════════════════════════════════════════════════
+// ── RENDER: DISTRIBUTION CHART ────────────────────────
+function renderDist(dist, curr) {
+  const max = Math.max(...dist, 1)
+  document.getElementById('dist-chart').innerHTML = dist.map((v, i) => `
+    <div class="dist-row">
+      <div class="dist-label">${i}</div>
+      <div class="dist-bar-wrap">
+        <div class="dist-bar${i===curr?' curr':''}" style="width:${v ? Math.max(Math.round(v/max*100), 5) : 0}%"></div>
+      </div>
+      <div class="dist-count">${v}</div>
+    </div>`).join('')
+}
+
+// ── RENDER: RESULTS ───────────────────────────────────
+async function renderResults(score, answers, stats) {
+  document.getElementById('pfill').style.width = '100%'
+  document.getElementById('cscore').textContent = `${score}/5`
+  document.getElementById('cmsg').textContent = [
+    'Tough one! Better luck tomorrow!',
+    'Keep going! Your instincts will sharpen.',
+    "Not bad! You're getting there.",
+    'Good work! Solid instincts.',
+    "Nice! You've got a sharp instinct.",
+    'Perfect score! You know your numbers.'
+  ][score]
+  document.getElementById('peer-msg').textContent = ''
+
+  fetchPeerPct(score).then(r => {
+    if (r) document.getElementById('peer-msg').textContent =
+      `${r.pct}% of ${r.total.toLocaleString()} player${r.total===1?'':'s'} scored ${score}/5 today`
+  })
+
+  document.getElementById('streak-num').textContent = stats.streak
+  document.getElementById('played-num').textContent = stats.plays
+  document.getElementById('avg-num').textContent    = stats.avg
+  renderDist(stats.dist, score)
+
+  const eg = document.getElementById('egrid'); eg.innerHTML = ''
+  answers.forEach(r => {
+    const b = document.createElement('div')
+    b.className = 'eblock ' + (r ? 'ok' : 'no'); eg.appendChild(b)
+  })
+
+  const emo = answers.map(r => r ? '🟩' : '🟥').join('')
+  document.getElementById('sharebox').textContent =
+    `PopGuess #${dayNum()}\n${score}/5  🔥 ${stats.streak}-day streak\n\n${emo}\n\nhttps://samtross10.github.io/popGuess/`
+
+  renderDoneAuth()
+}
+
+// ── RENDER: QUESTION REVIEW ───────────────────────────
+async function renderReview(answers) {
+  const rv = document.getElementById('review'); rv.innerHTML = ''
+  let qs = questions
+
+  if (!qs || !qs.length) {
+    const { data } = await db.from('questions').select('*')
+      .eq('play_date', todayKey()).order('sort_order', { ascending: true })
+    qs = data || []
+  }
+
+  if (!qs.length) {
+    rv.innerHTML = '<div style="font-size:13px;color:var(--text2);padding:.5rem 0">Question review unavailable.</div>'
+    return
+  }
+  if (!answers.length) {
+    rv.innerHTML = '<div style="font-size:13px;color:var(--text2);padding:.5rem 0">Play a game first to see your review.</div>'
+    return
+  }
+
+  qs.forEach((q, i) => {
+    const ok = answers[i]; const d = document.createElement('div'); d.className = 'ritem'
+    d.innerHTML = `<div class="rico ${ok?'ok':'no'}"></div><div><div class="rq">${q.question}</div><div class="ra">${q.answer_display} <span class="rsrc">(${q.source})</span></div></div>`
+    rv.appendChild(d)
+  })
+}
+
+// ── GAME FLOW ─────────────────────────────────────────
 async function startGame() {
   ci = 0; results = []; guessed = false
-  questions = await fetchTodaysQuestions()
-  loadQ(0)
-  show('s-game')
+  for (let i=0; i<5; i++) document.getElementById(`d${i}`).className = 'dot'
+  questions = await fetchQuestions()
+  loadQ(0); show('s-game')
 }
 
 async function resumeGame() {
-  const savedQs = JSON.parse(localStorage.getItem('pg_progress_questions') || '[]')
-  questions = savedQs.length > 0 ? savedQs : await fetchTodaysQuestions()
-  results   = JSON.parse(localStorage.getItem('pg_progress_results') || '[]')
-  ci        = parseInt(localStorage.getItem('pg_progress_ci') || '0')
+  const savedQs = JSON.parse(localStorage.getItem('pg_prog_qs') || '[]')
+  questions = savedQs.length ? savedQs : await fetchQuestions()
+  results   = JSON.parse(localStorage.getItem('pg_prog_res') || '[]')
+  ci        = parseInt(localStorage.getItem('pg_prog_ci') || '0')
   guessed   = false
+  for (let i=0; i<5; i++) document.getElementById(`d${i}`).className = 'dot'
   results.forEach((ok, i) => document.getElementById(`d${i}`).classList.add(ok ? 'ok' : 'no'))
   loadQ(ci)
-  document.getElementById('pfill').style.width = `${(ci / 5) * 100}%`
+  document.getElementById('pfill').style.width = `${(ci/5)*100}%`
   show('s-game')
 }
 
 function loadQ(i) {
-  const q = questions[i]
-  guessed = false
+  const q = questions[i]; guessed = false
   document.getElementById('qcnt').textContent  = `${i+1} / 5`
   document.getElementById('qcat').textContent  = q.category
   document.getElementById('qtext').textContent = q.question
   document.getElementById('qthr').textContent  = q.threshold_display
   document.getElementById('pfill').style.width = `${(i/5)*100}%`
   const bh = document.getElementById('bhi'), bl = document.getElementById('blo')
-  bh.className = 'gbtn'; bl.className = 'gbtn'
-  bh.disabled = false;   bl.disabled = false
+  bh.className='gbtn'; bl.className='gbtn'; bh.disabled=false; bl.disabled=false
   document.getElementById('rev').classList.remove('show')
   document.getElementById('nxtbtn').classList.remove('show')
 }
 
 function guess(dir) {
-  if (guessed) return
-  guessed = true
-  const q  = questions[ci]
-  const ok = dir === q.direction
+  if (guessed) return; guessed = true
+  const q = questions[ci], ok = dir === q.direction
   results.push(ok)
-  const bh = document.getElementById('bhi'), bl = document.getElementById('blo')
-  const chosen     = dir === 'higher' ? bh : bl
-  const other      = dir === 'higher' ? bl : bh
-  const correctBtn = q.direction === 'higher' ? bh : bl
-  chosen.disabled = true; other.disabled = true
+  const bh=document.getElementById('bhi'), bl=document.getElementById('blo')
+  const chosen=dir==='higher'?bh:bl, other=dir==='higher'?bl:bh, correct=q.direction==='higher'?bh:bl
+  chosen.disabled=true; other.disabled=true
   if (ok) { chosen.classList.add('ok'); other.classList.add('dim') }
-  else    { chosen.classList.add('no'); correctBtn.classList.add('ok'); other.classList.add('dim') }
+  else    { chosen.classList.add('no'); correct.classList.add('ok'); other.classList.add('dim') }
   document.getElementById(`d${ci}`).classList.add(ok ? 'ok' : 'no')
   document.getElementById('revnum').textContent = q.answer_display
   document.getElementById('revsrc').textContent = 'Source: ' + q.source
@@ -1042,206 +673,92 @@ function nextQ() {
   else        { clearProgress(); done() }
 }
 
-// ═══════════════════════════════════════════════════════
-// RESULTS SCREEN
-// ═══════════════════════════════════════════════════════
 async function done() {
   finalScore = results.filter(Boolean).length
+  const localStreak = saveLocal(finalScore, results)
+  await savePlay(finalScore, results)
 
-  const localStreak = saveLocalStats(finalScore, results)
-  await savePlayToSupabase(finalScore, results)
-
-  let stats = currentUser ? await loadSupabaseStats() : null
+  let stats = await fetchSupabaseStats()
   if (!stats) {
-    const s = getLocalStats()
-    stats = { streak: localStreak, plays: s.plays, dist: s.dist,
-              avg: s.plays > 0 ? (s.totalScore / s.plays).toFixed(1) : finalScore.toFixed(1) }
+    const s = getLocal()
+    stats = { streak:localStreak, plays:s.plays, dist:s.dist,
+              avg: s.plays ? (s.totalScore/s.plays).toFixed(1) : finalScore.toFixed(1) }
   }
 
-  document.getElementById('pfill').style.width = '100%'
-  document.getElementById('cscore').textContent = `${finalScore}/5`
-  const msgs = [
-    'Tough one! Better luck tomorrow!',
-    'Keep going! Your instincts will sharpen.',
-    "Not bad! You're getting there.",
-    'Good work! Solid instincts.',
-    "Nice! You've got a sharp instinct.",
-    'Perfect score! You know your numbers.'
-  ]
-  document.getElementById('cmsg').textContent = msgs[finalScore]
-
-  getScorePercentageToday(finalScore).then(r => {
-    const el = document.getElementById('peer-msg')
-    el.textContent = r ? `${r.pct}% of ${r.total.toLocaleString()} player${r.total===1?'':'s'} scored ${finalScore}/5 today` : ''
-  })
-
-  document.getElementById('streak-num').textContent = stats.streak
-  document.getElementById('played-num').textContent = stats.plays
-  document.getElementById('avg-num').textContent    = stats.avg
-  renderDist(stats.dist, finalScore)
-
-  const eg = document.getElementById('egrid')
-  eg.innerHTML = ''
-  results.forEach(r => {
-    const b = document.createElement('div')
-    b.className = 'eblock ' + (r ? 'ok' : 'no')
-    eg.appendChild(b)
-  })
-
-  const emo = results.map(r => r ? '🟩' : '🟥').join('')
-  document.getElementById('sharebox').textContent =
-    `PopGuess #${dayNum()}\n${finalScore}/5  🔥 ${stats.streak}-day streak\n\n${emo}\n\nhttps://samtross10.github.io/popGuess/`
-
-  renderDoneAuthArea()
-
-  const rv = document.getElementById('review')
-  rv.innerHTML = ''
-  questions.forEach((q, i) => {
-    const ok = results[i]
-    const d  = document.createElement('div')
-    d.className = 'ritem'
-    d.innerHTML = `<div class="rico ${ok?'ok':'no'}"></div><div><div class="rq">${q.question}</div><div class="ra">${q.answer_display} <span class="rsrc">(${q.source})</span></div></div>`
-    rv.appendChild(d)
-  })
-
+  await renderResults(finalScore, results, stats)
+  await renderReview(results)
   show('s-done')
 }
 
 async function showStats() {
-  let stats = currentUser ? await loadSupabaseStats() : null
+  let stats = await fetchSupabaseStats()
   if (!stats) {
-    const s = getLocalStats()
-    stats = { streak: s.streak, plays: s.plays, dist: s.dist,
-              avg: s.plays > 0 ? (s.totalScore / s.plays).toFixed(1) : '—' }
+    const s = getLocal()
+    stats = { streak:s.streak, plays:s.plays, dist:s.dist, avg:s.plays ? (s.totalScore/s.plays).toFixed(1) : '—' }
   }
 
-  const s           = getLocalStats()
-  const lastScore   = s.lastScore
-  const lastAnswers = JSON.parse(localStorage.getItem('pg_last_answers') || '[]')
+  const lastScore = getLocal().lastScore
+  const lastAns   = JSON.parse(localStorage.getItem('pg_last_ans') || '[]')
 
-  document.getElementById('cscore').textContent = `${lastScore}/5`
-  document.getElementById('cmsg').textContent   = 'Come back tomorrow for the next game.'
-  document.getElementById('peer-msg').textContent = ''
+  await renderResults(lastScore, lastAns, stats)
+  document.getElementById('cmsg').textContent = 'Come back tomorrow for the next game.'
 
-  getScorePercentageToday(lastScore).then(r => {
-    const el = document.getElementById('peer-msg')
-    el.textContent = r ? `${r.pct}% of ${r.total.toLocaleString()} player${r.total===1?'':'s'} scored ${lastScore}/5 today` : ''
-  })
+  await renderReview(lastAns)
 
-  document.getElementById('streak-num').textContent = stats.streak
-  document.getElementById('played-num').textContent = stats.plays
-  document.getElementById('avg-num').textContent    = stats.avg
-  renderDist(stats.dist, lastScore)
-
-  const eg = document.getElementById('egrid')
-  eg.innerHTML = ''
-  lastAnswers.forEach(r => {
-    const b = document.createElement('div')
-    b.className = 'eblock ' + (r ? 'ok' : 'no')
-    eg.appendChild(b)
-  })
-
-  const emo = lastAnswers.map(r => r ? '🟩' : '🟥').join('')
-  document.getElementById('sharebox').textContent =
-    `PopGuess #${dayNum()}\n${lastScore}/5  🔥 ${stats.streak}-day streak\n\n${emo}\n\nhttps://samtross10.github.io/popGuess/`
-
-  renderDoneAuthArea()
-
-  // Back button — only add once
+  // Add back button once
   const hdr = document.querySelector('#s-done .hdr')
   if (!hdr.querySelector('.back-to-home')) {
     const btn = document.createElement('button')
-    btn.className = 'user-chip back-to-home'
-    btn.textContent = '← Home'
+    btn.className = 'user-chip back-to-home'; btn.textContent = '← Home'
     btn.addEventListener('click', () => { show('s-intro'); renderIntro() })
     hdr.appendChild(btn)
-  }
-
-  // Question review
-  const rv = document.getElementById('review')
-  rv.innerHTML = ''
-  const { data: qs } = await db.from('questions').select('*')
-    .eq('play_date', todayKey()).order('sort_order', { ascending: true })
-
-  if (!qs || qs.length === 0) {
-    rv.innerHTML = '<div style="font-size:13px;color:var(--text2);padding:.5rem 0">Question review unavailable.</div>'
-  } else if (lastAnswers.length === 0) {
-    rv.innerHTML = '<div style="font-size:13px;color:var(--text2);padding:.5rem 0">Play a game first to see your review.</div>'
-  } else {
-    qs.forEach((q, i) => {
-      const ok = lastAnswers[i]
-      const d  = document.createElement('div')
-      d.className = 'ritem'
-      d.innerHTML = `<div class="rico ${ok?'ok':'no'}"></div><div><div class="rq">${q.question}</div><div class="ra">${q.answer_display} <span class="rsrc">(${q.source})</span></div></div>`
-      rv.appendChild(d)
-    })
   }
 
   show('s-done')
 }
 
-function renderDist(dist, curr) {
-  const max = Math.max(...dist, 1)
-  document.getElementById('dist-chart').innerHTML = dist.map((v, i) => `
-    <div class="dist-row">
-      <div class="dist-label">${i}</div>
-      <div class="dist-bar-wrap">
-        <div class="dist-bar${i===curr?' curr':''}" style="width:${v===0?0:Math.max(Math.round((v/max)*100),5)}%"></div>
-      </div>
-      <div class="dist-count">${v}</div>
-    </div>`).join('')
-}
-
 function doCopy() {
   navigator.clipboard.writeText(document.getElementById('sharebox').textContent).then(() => {
-    const b = document.getElementById('copybtn')
-    b.textContent = 'Copied!'
+    const b = document.getElementById('copybtn'); b.textContent = 'Copied!'
     setTimeout(() => b.textContent = 'Copy results', 2000)
   })
 }
 
-// ═══════════════════════════════════════════════════════
-// BOOT — single auth listener drives everything
-// ═══════════════════════════════════════════════════════
+// ── STATIC BUTTON WIRING (once, on page load) ─────────
+document.getElementById('intro-si-btn').addEventListener('click',  () => goSignIn('intro'))
+document.getElementById('show-stats-btn').addEventListener('click', showStats)
+document.getElementById('si-back').addEventListener('click',        goBack)
+document.getElementById('si-submit').addEventListener('click',      doSignIn)
+document.getElementById('si-google').addEventListener('click',      doGoogleSignIn)
+document.getElementById('bhi').addEventListener('click',            () => guess('higher'))
+document.getElementById('blo').addEventListener('click',            () => guess('lower'))
+document.getElementById('nxtbtn').addEventListener('click',         nextQ)
+document.getElementById('copybtn').addEventListener('click',        doCopy)
+
+// ── BOOT ──────────────────────────────────────────────
 function boot() {
-  // Clean up OAuth hash from URL immediately
+  // Clean up OAuth hash immediately
   if (window.location.hash.includes('access_token')) {
     window.history.replaceState({}, document.title, window.location.pathname)
   }
 
-  // This is the ONLY place that sets currentUser and updates the UI.
-  // INITIAL_SESSION fires on every page load (signed in or not).
-  // SIGNED_IN fires after OAuth redirect or email sign-in.
-  // SIGNED_OUT fires after signOut().
+  // Single auth listener — the only place currentUser is set
+  // INITIAL_SESSION fires on every page load (signed in or not)
+  // SIGNED_IN fires after email login or Google OAuth redirect
+  // SIGNED_OUT fires after doSignOut()
   db.auth.onAuthStateChange(async (event, session) => {
     console.log('auth:', event, session?.user?.email ?? 'none')
     currentUser = session?.user ?? null
-
-    // Always re-render intro
     await renderIntro()
 
-    // If user just signed in while on the sign-in screen, navigate back
     if (event === 'SIGNED_IN' && document.getElementById('s-signin').classList.contains('active')) {
       goBack()
     }
-
-    // If user signed out while on the done screen, update it
     if (event === 'SIGNED_OUT' && document.getElementById('s-done').classList.contains('active')) {
-      renderDoneAuthArea()
+      renderDoneAuth()
     }
   })
 }
-
-// Wire up static HTML buttons that never change
-document.getElementById('intro-si-btn').addEventListener('click', () => goSignIn('intro'))
-document.querySelector('#s-signin .back-link').addEventListener('click', goBack)
-document.querySelector('#s-signin .btn-primary').addEventListener('click', doSignIn)
-document.querySelector('#s-signin .btn-secondary').addEventListener('click', doGoogleSignIn)
-document.getElementById('nxtbtn').addEventListener('click', nextQ)
-document.getElementById('bhi').addEventListener('click', () => guess('higher'))
-document.getElementById('blo').addEventListener('click', () => guess('lower'))
-document.getElementById('copybtn').addEventListener('click', doCopy)
-document.getElementById('show-stats-btn').addEventListener('click', showStats)
 
 boot()
 </script>
