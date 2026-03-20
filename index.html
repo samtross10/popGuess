@@ -508,11 +508,11 @@
         <div class="already-score" id="already-score-lbl"></div>
         <div class="already-msg">You've already played today. Come back tomorrow!</div>
       </div>
-      <button class="btn-secondary" style="margin-top:.75rem" onclick="showStats()">View my stats</button>
+      <button class="btn-secondary" style="margin-top:.75rem">View my stats</button>
     </div>
 
-    <button class="btn-primary" id="play-btn" onclick="startGame()">Play today's game</button>
-    <button class="btn-secondary" id="intro-si-btn" onclick="goSignIn('intro')">Sign in to sync your streak</button>
+    <button class="btn-primary" id="play-btn">Play today's game</button>
+    <button class="btn-secondary" id="intro-si-btn">Sign in to sync your streak</button>
   </div>
 
   <!-- ═══════════════════════════════════════════════ -->
@@ -543,8 +543,8 @@
     </div>
 
     <div class="brow">
-      <button class="gbtn" id="bhi" onclick="guess('higher')">↑ Higher</button>
-      <button class="gbtn" id="blo" onclick="guess('lower')">↓ Lower</button>
+      <button class="gbtn" id="bhi">↑ Higher</button>
+      <button class="gbtn" id="blo">↓ Lower</button>
     </div>
 
     <div class="revcard" id="rev">
@@ -553,7 +553,7 @@
       <div class="revsrc" id="revsrc"></div>
     </div>
 
-    <button class="nxtbtn" id="nxtbtn" onclick="nextQ()">Next question →</button>
+    <button class="nxtbtn" id="nxtbtn" >Next question →</button>
   </div>
 
   <!-- ═══════════════════════════════════════════════ -->
@@ -591,7 +591,7 @@
 
     <div class="egrid" id="egrid"></div>
     <div class="sharebox" id="sharebox"></div>
-    <button class="copybtn" id="copybtn" onclick="doCopy()">Copy results</button>
+    <button class="copybtn" id="copybtn">Copy results</button>
 
     <div id="done-auth-cta"></div>
 
@@ -605,9 +605,9 @@
   <!-- SIGN-IN SCREEN                                  -->
   <!-- ═══════════════════════════════════════════════ -->
   <div class="screen" id="s-signin">
-    <button class="back-link" onclick="goBack()">← Back</button>
-    <div class="si-title">Sign in to<br>PopGuess</div>
-    <div class="si-sub">Save your streak and score history across all your devices.</div>
+    <button class="back-link">← Back</button>
+    <button class="btn-primary" style="margin-top:.5rem">Sign in / Create account</button>
+    <button class="btn-secondary">Continue with Google</button>
 
     <div style="height:1rem"></div>
 
@@ -883,8 +883,6 @@ async function doSignIn() {
 }
 
 async function doGoogleSignIn() {
-  // Clear any stale local session before OAuth so it always works on first click
-  await db.auth.signOut({ scope: 'local' })
   const { error } = await db.auth.signInWithOAuth({
     provider: 'google',
     options: { redirectTo: window.location.href }
@@ -1243,6 +1241,7 @@ document.getElementById('nxtbtn').addEventListener('click', nextQ)
 document.getElementById('bhi').addEventListener('click', () => guess('higher'))
 document.getElementById('blo').addEventListener('click', () => guess('lower'))
 document.getElementById('copybtn').addEventListener('click', doCopy)
+document.getElementById('show-stats-btn').addEventListener('click', showStats)
 
 boot()
 </script>
