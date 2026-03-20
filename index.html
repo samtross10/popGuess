@@ -885,7 +885,7 @@ async function signOut() {
 // ─────────────────────────────────────────────────────
 // Intro screen setup
 // ─────────────────────────────────────────────────────
-function initIntro() {
+async function initIntro() {
   const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
   document.getElementById('day-date-lbl').textContent = `5 questions · ${today}`
   document.getElementById('day-game-lbl').textContent = `Today's game · #${dayNum()}`
@@ -903,8 +903,38 @@ function initIntro() {
   }
 
   const playBtn = document.getElementById('play-btn')
-  if (playedToday()) {
-    const lastScore = getLocalStats().lastScore
+
+  // If signed in, check Supabase for today's play
+  let alreadyPlayedRemote = false
+  let remoteScore = null
+
+  if (currentUser) {
+    const { data } = await db
+      .from('plays')
+      .select('score, answers')
+      .eq('user_id', currentUser.id)
+      .eq('play_date', todayKey())
+      .limit(1)
+      .maybeSingle()
+
+    if (data) {
+      alreadyPlayedRemote = true
+      remoteScore = data.score
+
+      // Sync to localStorage so offline checks work too
+      localStorage.setItem('pg_last_played', todayKey())
+      localStorage.setItem('pg_last_score', data.score)
+      if (data.answers) {
+        localStorage.setItem('pg_last_answers', JSON.stringify(data.answers))
+      }
+    }
+  }
+
+  const playedLocal  = playedToday()
+  const alreadyPlayed = playedLocal || alreadyPlayedRemote
+  const lastScore = remoteScore ?? getLocalStats().lastScore
+
+  if (alreadyPlayed) {
     playBtn.disabled = true
     playBtn.textContent = 'Come back tomorrow'
     document.getElementById('already-wrap').style.display = 'block'
@@ -1277,17 +1307,15 @@ function doCopy() {
 // Boot — check for existing Supabase session
 // ─────────────────────────────────────────────────────
 async function boot() {
-  // Restore session if user was previously signed in
   const { data: { session } } = await db.auth.getSession()
   if (session) currentUser = session.user
 
-  // Keep currentUser in sync on any auth changes (e.g. Google redirect)
   db.auth.onAuthStateChange((_event, session) => {
     currentUser = session?.user ?? null
     initIntro()
   })
 
-  initIntro()
+  await initIntro()
 }
 
 boot()
