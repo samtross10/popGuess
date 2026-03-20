@@ -751,12 +751,25 @@ async function fetchTodaysQuestions() {
 // Supabase: save a completed play
 // ─────────────────────────────────────────────────────
 async function savePlayToSupabase(score, answers) {
-  if (!currentUser) return
-  const { error } = await db.from('plays').upsert(
-    { user_id: currentUser.id, play_date: todayKey(), score, answers },
-    { onConflict: 'user_id,play_date', ignoreDuplicates: true }
-  )
-  if (error) console.error('Could not save play:', error.message)
+  const payload = {
+    play_date: todayKey(),
+    score,
+    answers,
+    user_id: currentUser ? currentUser.id : null
+  }
+
+  if (currentUser) {
+    // Signed-in: upsert so re-saves don't duplicate
+    const { error } = await db.from('plays').upsert(
+      payload,
+      { onConflict: 'user_id,play_date', ignoreDuplicates: true }
+    )
+    if (error) console.error('Could not save play:', error.message)
+  } else {
+    // Guest: plain insert, no dedup needed
+    const { error } = await db.from('plays').insert(payload)
+    if (error) console.error('Could not save anonymous play:', error.message)
+  }
 }
 
 // ─────────────────────────────────────────────────────
@@ -884,13 +897,24 @@ async function doSignIn() {
 }
 
 async function doGoogleSignIn() {
+  // Force clear any stale session state before starting OAuth
+  // This is what causes the "does nothing" on first click after sign out
+  try {
+    await db.auth.signOut({ scope: 'local' })
+  } catch (e) {
+    // Ignore errors — we just want the local state cleared
+  }
+
+  // Small delay to let Supabase finish clearing state
+  await new Promise(resolve => setTimeout(resolve, 150))
+
   const { error } = await db.auth.signInWithOAuth({
     provider: 'google',
     options: {
       redirectTo: window.location.href
     }
   })
-  if (error) console.error(error.message)
+  if (error) console.error('Google sign in error:', error.message)
 }
 
 async function signOut() {
