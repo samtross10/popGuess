@@ -890,7 +890,7 @@ async function signOut() {
 // ─────────────────────────────────────────────────────
 function initIntro() {
   const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-  document.getElementById('day-date-lbl').textContent = `5 questions · ${today}`
+  document.getElementById('day-date-lbl').textContent = `#${dayNum()} · 5 questions · ${today}`
 
   const authEl = document.getElementById('intro-auth-el')
   const siBtn  = document.getElementById('intro-si-btn')
@@ -911,9 +911,15 @@ function initIntro() {
     playBtn.textContent = 'Come back tomorrow'
     document.getElementById('already-wrap').style.display = 'block'
     document.getElementById('already-score-lbl').textContent = `${lastScore}/5`
+  } else if (hasProgressToday()) {
+    playBtn.disabled = false
+    playBtn.textContent = 'Resume puzzle'
+    playBtn.onclick = resumeGame
+    document.getElementById('already-wrap').style.display = 'none'
   } else {
     playBtn.disabled = false
     playBtn.textContent = "Play today's game"
+    playBtn.onclick = startGame
     document.getElementById('already-wrap').style.display = 'none'
   }
 }
@@ -959,7 +965,7 @@ async function showStats() {
     ? lastAnswers.map(r => r ? '🟩' : '🟥').join('')
     : ''
   document.getElementById('sharebox').textContent =
-    `PopGuess #${dayNum()}\n${lastScore}/5  🔥 ${stats.streak}-day streak\n\n${emo}\n\npopguess.io`
+    `PopGuess #${dayNum()}\n${s.lastScore}/5  🔥 ${stats.streak}-day streak\n\n${emo}\n\nhttps://samtross10.github.io/popGuess/`
 
   renderDoneAuth()
 
@@ -1025,6 +1031,32 @@ async function startGame() {
   show('s-game')
 }
 
+async function resumeGame() {
+  const savedQuestions = JSON.parse(localStorage.getItem('pg_progress_questions') || '[]')
+  const savedResults   = JSON.parse(localStorage.getItem('pg_progress_results') || '[]')
+  const savedCi        = parseInt(localStorage.getItem('pg_progress_ci') || '0')
+
+  if (savedQuestions.length === 0) {
+    questions = await fetchTodaysQuestions()
+  } else {
+    questions = savedQuestions
+  }
+
+  results = savedResults
+  ci = savedCi
+  guessed = false
+
+  // Restore the dot states from saved results
+  results.forEach((ok, i) => {
+    document.getElementById(`d${i}`).classList.add(ok ? 'ok' : 'no')
+  })
+
+  loadQ(ci)
+  document.getElementById('pfill').style.width = `${(ci / 5) * 100}%`
+  document.getElementById('qcnt').textContent = `${ci + 1} / 5`
+  show('s-game')
+}
+
 function loadQ(i) {
   const q = questions[i]
   guessed = false
@@ -1077,10 +1109,32 @@ function guess(dir) {
   const nb = document.getElementById('nxtbtn')
   nb.textContent = ci < 4 ? 'Next question →' : 'See my results →'
   nb.classList.add('show')
+
+  saveProgress()
 }
 
 function nextQ() {
-  if (ci < 4) { ci++; loadQ(ci) } else { done() }
+  if (ci < 4) { ci++; loadQ(ci); saveProgress() } else { clearProgress(); done() }
+}
+
+function saveProgress() {
+  localStorage.setItem('pg_progress_date', todayKey())
+  localStorage.setItem('pg_progress_ci', ci)
+  localStorage.setItem('pg_progress_results', JSON.stringify(results))
+  localStorage.setItem('pg_progress_questions', JSON.stringify(questions))
+}
+
+function clearProgress() {
+  localStorage.removeItem('pg_progress_date')
+  localStorage.removeItem('pg_progress_ci')
+  localStorage.removeItem('pg_progress_results')
+  localStorage.removeItem('pg_progress_questions')
+}
+
+function hasProgressToday() {
+  return localStorage.getItem('pg_progress_date') === todayKey()
+    && localStorage.getItem('pg_progress_ci') !== null
+    && !playedToday()
 }
 
 // ─────────────────────────────────────────────────────
@@ -1141,7 +1195,7 @@ async function done() {
   // Share text
   const emo = results.map(r => r ? '🟩' : '🟥').join('')
   document.getElementById('sharebox').textContent =
-    `PopGuess #${dayNum()}\n${finalScore}/5  🔥 ${stats.streak}-day streak\n\n${emo}\n\npopguess.io`
+    `PopGuess #${dayNum()}\n${finalScore}/5  🔥 ${stats.streak}-day streak\n\n${emo}\n\nhttps://samtross10.github.io/popGuess/`
 
   // Auth CTA + done-header user chip
   renderDoneAuth()
