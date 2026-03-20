@@ -462,6 +462,14 @@
       text-align: center; padding: 2rem 0;
     }
 
+    .peer-msg {
+      font-size: 13px;
+      color: var(--text3);
+      margin-bottom: 1.5rem;
+      margin-top: -.75rem;
+      min-height: 18px;
+    }
+
     /* ── Animations ─────────────────────────────────── */
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(6px); }
@@ -559,6 +567,7 @@
 
     <div class="cscore" id="cscore"></div>
     <div class="cmsg" id="cmsg"></div>
+    <div class="peer-msg" id="peer-msg"></div>
 
     <div class="stat-row">
       <div class="stat-pill">
@@ -973,6 +982,14 @@ async function showStats() {
 
   document.getElementById('cscore').textContent = `${lastScore}/5`
   document.getElementById('cmsg').textContent = 'Come back tomorrow for the next game.'
+
+  getScorePercentageToday(lastScore).then(result => {
+    const el = document.getElementById('peer-msg')
+    if (!result) { el.textContent = ''; return }
+    const { pct, total } = result
+    el.textContent = `Along with ${pct}% of the ${total.toLocaleString()} player${total === 1 ? '' : 's'} today`
+  })
+
   document.getElementById('streak-num').textContent = stats.streak
   document.getElementById('played-num').textContent = stats.plays
   document.getElementById('avg-num').textContent    = stats.avg
@@ -1194,14 +1211,22 @@ async function done() {
   document.getElementById('pfill').style.width = '100%'
   document.getElementById('cscore').textContent = `${finalScore}/5`
   const msgs = [
-    'Tough one — the world is full of surprises.',
-    'Keep going — your instincts will sharpen.',
+    'Tough one! Better luck tomorrow!',
+    'Keep going! Your instincts will sharpen.',
     "Not bad! You're getting there.",
-    'Good work — solid instincts.',
-    'Nice! You\'ve got a sharp eye.',
+    'Good work! Solid instincts.',
+    'Nice! You\'ve got a sharp instinct.',
     'Perfect score! You know your numbers.'
   ]
   document.getElementById('cmsg').textContent = msgs[finalScore]
+
+  // Load peer comparison async — fills in after render
+  getScorePercentageToday(finalScore).then(result => {
+    const el = document.getElementById('peer-msg')
+    if (!result) { el.textContent = ''; return }
+    const { pct, total } = result
+    el.textContent = `Along with ${pct}% of the ${total.toLocaleString()} player${total === 1 ? '' : 's'} today`
+  })
 
   // Stat pills
   document.getElementById('streak-num').textContent = stats.streak
@@ -1316,6 +1341,22 @@ async function boot() {
   })
 
   await initIntro()
+}
+
+async function getScorePercentageToday(score) {
+  const { data, error } = await db.rpc('get_score_distribution_today', {
+    p_date: todayKey()
+  })
+
+  if (error || !data || data.length === 0) return null
+
+  const total = data.reduce((sum, row) => sum + parseInt(row.count), 0)
+  const matching = data.find(row => row.score === score)
+
+  if (!matching || total === 0) return null
+
+  const pct = Math.round((parseInt(matching.count) / total) * 100)
+  return { pct, total }
 }
 
 boot()
