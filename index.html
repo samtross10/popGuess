@@ -1007,22 +1007,32 @@ async function submitSuggestion() {
   if (!answer_display)    { showSugStatus('Please enter the answer display label.', 'error'); return }
   if (!source)            { showSugStatus('Please enter a source.', 'error'); return }
 
-  btn.textContent='Submitting…'; btn.disabled=true
+  btn.textContent = 'Submitting…'; btn.disabled = true
 
-  const { error } = await db.from('suggestions').insert({
-    category, question, threshold, threshold_display,
-    answer, answer_display, source, direction: sugDir,
-    user_id: currentUser?.id ?? null,
-    email:   currentUser?.email ?? null,
-  })
+  try {
+    const { error } = await db.from('suggestions').insert({
+      category, question, threshold, threshold_display,
+      answer, answer_display, source, direction: sugDir,
+      user_id: currentUser?.id ?? null,
+      email:   currentUser?.email ?? null,
+    })
 
-  btn.textContent='Submit question'; btn.disabled=false
+    if (error) {
+      console.error('Suggestion insert error:', error)
+      showSugStatus(`Error: ${error.message}`, 'error')
+      return
+    }
 
-  if (error) { showSugStatus('Something went wrong. Please try again.', 'error'); console.error(error); return }
+    document.getElementById('sug-form').style.display    = 'none'
+    document.getElementById('sug-success').style.display = 'block'
+    loadPastSuggestions()
 
-  document.getElementById('sug-form').style.display    = 'none'
-  document.getElementById('sug-success').style.display = 'block'
-  loadPastSuggestions()
+  } catch (err) {
+    console.error('Suggestion unexpected error:', err)
+    showSugStatus('Something went wrong. Please try again.', 'error')
+  } finally {
+    btn.textContent = 'Submit question'; btn.disabled = false
+  }
 }
 
 function resetSugForm() {
