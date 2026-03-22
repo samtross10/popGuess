@@ -6,6 +6,12 @@
   <title>PopGuess</title>
   <link rel="icon" type="image/png" href="favicon.png">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    // If jsdelivr failed to load supabase, try unpkg as fallback
+    if (typeof supabase === 'undefined') {
+      document.write('<script src="https://unpkg.com/@supabase/supabase-js@2"><\/script>')
+    }
+  </script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -249,8 +255,10 @@
         <div class="already-msg">You've already played today. Come back tomorrow!</div>
       </div>
     </div>
-    <div id="play-btn-wrap"></div>
-    <div id="intro-bottom-btn"></div>
+    <button class="btn-primary" id="play-btn" style="display:block">Play today's game</button>
+    <button class="btn-secondary" id="stats-btn" style="display:none">View my stats</button>
+    <button class="btn-secondary" id="sug-btn" style="display:none">Suggest a question →</button>
+    <button class="btn-secondary" id="signin-btn">Sign in to sync your streak</button>
   </div>
 
   <!-- ══ GAME ═════════════════════════════════════════ -->
@@ -451,10 +459,20 @@
 const SUPABASE_URL = 'https://sjwbcmnjzuxhnxesvdjr.supabase.co'
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqd2JjbW5qenV4aG54ZXN2ZGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4ODQ1MTUsImV4cCI6MjA4OTQ2MDUxNX0.HFR3MRqg3xeaMJEPkCK7b_hhD8hkWFCsWAoipww_0jU'
 
-const { createClient } = supabase
-const db = createClient(SUPABASE_URL, SUPABASE_KEY, {
-  auth: { detectSessionInUrl: true, autoRefreshToken: true, persistSession: true }
-})
+// Defer db creation until we confirm supabase loaded.
+// If both CDNs fail, show a friendly error instead of silent breakage.
+let db
+function initDb() {
+  if (typeof supabase === 'undefined') {
+    document.body.innerHTML = '<div style="max-width:480px;margin:4rem auto;padding:2rem;font-family:system-ui;color:#a32d2d;background:#fdecea;border-radius:12px;text-align:center"><div style="font-size:18px;font-weight:600;margin-bottom:.5rem">Connection error</div><div style="font-size:14px">Could not load required libraries. Please check your internet connection and refresh.</div></div>'
+    return false
+  }
+  const { createClient } = supabase
+  db = createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: { detectSessionInUrl: true, autoRefreshToken: true, persistSession: true }
+  })
+  return true
+}
 
 // ── FALLBACK QUESTIONS ───────────────────────────────
 const FALLBACK = [
@@ -643,25 +661,18 @@ async function claimLocalPlay(user) {
 }
 
 // ── RENDER: INTRO ─────────────────────────────────────
-let renderIntroRunning = false
+// renderIntro only updates text/visibility — never touches listeners.
+// All listeners are wired once at page load below.
 async function renderIntro() {
-  // If already running, skip — the in-flight call will finish with fresh state
-  if (renderIntroRunning) return
-  renderIntroRunning = true
-  try {
-    await _renderIntro()
-  } finally {
-    renderIntroRunning = false
-  }
-}
-async function _renderIntro() {
-  const today = new Date().toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' })
+  const today  = new Date().toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' })
   const sunday = isSunday()
+
   document.getElementById('day-date-lbl').textContent = `5 questions · ${today}`
   document.getElementById('day-game-lbl').textContent = sunday
     ? `Community Sunday · #${dayNum()}`
     : `Today's game · #${dayNum()}`
 
+  // Auth chip — rebuilt fresh (it's tiny and fast, no async)
   const authEl = document.getElementById('intro-auth-el')
   authEl.innerHTML = ''
   if (currentUser) {
@@ -672,6 +683,7 @@ async function _renderIntro() {
     authEl.appendChild(chip)
   }
 
+  // Check played state
   let played = playedToday(), lastScore = getLocal().lastScore
   if (currentUser && !played) {
     const { data } = await db.from('plays').select('score,answers')
@@ -684,52 +696,27 @@ async function _renderIntro() {
     }
   }
 
+  // Already-played card
   document.getElementById('already-wrap').style.display = played ? 'block' : 'none'
   if (played) document.getElementById('already-score-lbl').textContent = `${lastScore}/5`
 
-  // Always rebuild play button fresh — same pattern as suggest button
-  // so there are never stale listeners
-  const playWrap = document.getElementById('play-btn-wrap')
-  playWrap.innerHTML = ''
-  const playBtn = document.createElement('button')
-  playBtn.className = 'btn-primary'
+  // Play button — update text and disabled only, listener handles logic at click time
+  const playBtn = document.getElementById('play-btn')
   if (played) {
     playBtn.textContent = 'Come back tomorrow'
     playBtn.disabled = true
   } else if (hasProgress()) {
     playBtn.textContent = 'Resume puzzle'
     playBtn.disabled = false
-    playBtn.addEventListener('click', resumeGame)
   } else {
     playBtn.textContent = sunday ? 'Play Community Sunday' : "Play today's game"
     playBtn.disabled = false
-    playBtn.addEventListener('click', startGame)
   }
-  playWrap.appendChild(playBtn)
 
-  // Bottom button area — rebuilt fresh every time
-  const bot = document.getElementById('intro-bottom-btn')
-  bot.innerHTML = ''
-  if (currentUser) {
-    if (played) {
-      const statsBtn = document.createElement('button')
-      statsBtn.className = 'btn-secondary'
-      statsBtn.textContent = 'View my stats'
-      statsBtn.addEventListener('click', showStats)
-      bot.appendChild(statsBtn)
-    }
-    const sugBtn = document.createElement('button')
-    sugBtn.className = 'btn-secondary'
-    sugBtn.textContent = 'Suggest a question →'
-    sugBtn.addEventListener('click', () => goSuggest('intro'))
-    bot.appendChild(sugBtn)
-  } else {
-    const siBtn = document.createElement('button')
-    siBtn.className = 'btn-secondary'
-    siBtn.textContent = 'Sign in to sync your streak'
-    siBtn.addEventListener('click', () => goSignIn('intro'))
-    bot.appendChild(siBtn)
-  }
+  // Show/hide secondary buttons based on auth + played state
+  document.getElementById('stats-btn').style.display   = (currentUser && played)  ? 'block' : 'none'
+  document.getElementById('sug-btn').style.display     = currentUser              ? 'block' : 'none'
+  document.getElementById('signin-btn').style.display  = currentUser              ? 'none'  : 'block'
 }
 
 // ── RENDER: DONE AUTH ─────────────────────────────────
@@ -1007,32 +994,22 @@ async function submitSuggestion() {
   if (!answer_display)    { showSugStatus('Please enter the answer display label.', 'error'); return }
   if (!source)            { showSugStatus('Please enter a source.', 'error'); return }
 
-  btn.textContent = 'Submitting…'; btn.disabled = true
+  btn.textContent='Submitting…'; btn.disabled=true
 
-  try {
-    const { error } = await db.from('suggestions').insert({
-      category, question, threshold, threshold_display,
-      answer, answer_display, source, direction: sugDir,
-      user_id: currentUser?.id ?? null,
-      email:   currentUser?.email ?? null,
-    })
+  const { error } = await db.from('suggestions').insert({
+    category, question, threshold, threshold_display,
+    answer, answer_display, source, direction: sugDir,
+    user_id: currentUser?.id ?? null,
+    email:   currentUser?.email ?? null,
+  })
 
-    if (error) {
-      console.error('Suggestion insert error:', error)
-      showSugStatus(`Error: ${error.message}`, 'error')
-      return
-    }
+  btn.textContent='Submit question'; btn.disabled=false
 
-    document.getElementById('sug-form').style.display    = 'none'
-    document.getElementById('sug-success').style.display = 'block'
-    loadPastSuggestions()
+  if (error) { showSugStatus('Something went wrong. Please try again.', 'error'); console.error(error); return }
 
-  } catch (err) {
-    console.error('Suggestion unexpected error:', err)
-    showSugStatus('Something went wrong. Please try again.', 'error')
-  } finally {
-    btn.textContent = 'Submit question'; btn.disabled = false
-  }
+  document.getElementById('sug-form').style.display    = 'none'
+  document.getElementById('sug-success').style.display = 'block'
+  loadPastSuggestions()
 }
 
 function resetSugForm() {
@@ -1070,7 +1047,15 @@ async function loadPastSuggestions() {
   })
 }
 
-// ── STATIC BUTTON WIRING ──────────────────────────────
+// ── STATIC BUTTON WIRING (once, never removed) ───────
+// Play button handler reads current state at click time — no stale closures
+document.getElementById('play-btn').addEventListener('click', () => {
+  if (hasProgress()) resumeGame()
+  else startGame()
+})
+document.getElementById('stats-btn').addEventListener('click',      showStats)
+document.getElementById('sug-btn').addEventListener('click',        () => goSuggest('intro'))
+document.getElementById('signin-btn').addEventListener('click',     () => goSignIn('intro'))
 document.getElementById('si-back').addEventListener('click',        goBack)
 document.getElementById('si-submit').addEventListener('click',      doSignIn)
 document.getElementById('si-google').addEventListener('click',      doGoogleSignIn)
@@ -1090,6 +1075,7 @@ document.getElementById('sug-back').addEventListener('click', () => {
 
 // ── BOOT ──────────────────────────────────────────────
 function boot() {
+  if (!initDb()) return  // CDN failed — error shown, stop here
   db.auth.onAuthStateChange(async (event, session) => {
     console.log('auth:', event, session?.user?.email ?? 'none')
 
