@@ -296,13 +296,13 @@
     <button class="back-link" id="sug-back">← Back</button>
     <div class="page-title">Suggest a question</div>
     <div class="page-sub">Got a surprising statistic? Submit it and it might be featured in a future game.</div>
-    <div class="sunday-badge"><div class="sunday-dot"></div>Community Sunday: Every Sunday, a random pool of 5 submitted questions will be featured in a game!</div>
+    <div class="sunday-badge"><div class="sunday-dot"></div>Community Sunday — suggested questions every week</div>
     <div class="status-msg" id="sug-status"></div>
     <div id="sug-success" style="display:none">
       <div style="background:var(--green-bg);border-radius:var(--rl);padding:1.5rem;text-align:center;margin-bottom:1.5rem">
         <div style="font-size:28px;margin-bottom:.5rem">✓</div>
         <div style="font-size:16px;font-weight:600;color:var(--green-tx);margin-bottom:.3rem">Question submitted!</div>
-        <div style="font-size:13px;color:var(--green-tx);opacity:.8">Your question will be reviewed and it may be featured on a future Community Sunday.</div>
+        <div style="font-size:13px;color:var(--green-tx);opacity:.8">We'll review it and may feature it on a Community Sunday.</div>
       </div>
       <button class="btn-p" id="sug-another">Submit another</button>
     </div>
@@ -386,10 +386,10 @@
 // ════════════════════════════════════════════════════════
 // CONFIG
 // ════════════════════════════════════════════════════════
-const URL  = 'https://sjwbcmnjzuxhnxesvdjr.supabase.co'
+const SB_URL = 'https://sjwbcmnjzuxhnxesvdjr.supabase.co'
 const AKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqd2JjbW5qenV4aG54ZXN2ZGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4ODQ1MTUsImV4cCI6MjA4OTQ2MDUxNX0.HFR3MRqg3xeaMJEPkCK7b_hhD8hkWFCsWAoipww_0jU'
 
-const db = supabase.createClient(URL, AKEY, {
+const db = supabase.createClient(SB_URL, AKEY, {
   auth: { detectSessionInUrl: true, persistSession: true, autoRefreshToken: true }
 })
 
@@ -1082,7 +1082,10 @@ async function boot() {
   })
 }
 
-boot()
+boot().catch(err => {
+  console.error('boot failed:', err)
+  document.getElementById('day-val').textContent = 'Error loading — please refresh'
+})
 </script>
 </body>
 </html>
