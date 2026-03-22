@@ -337,13 +337,14 @@ function saveLocal(score, answers) {
 
 function saveProgress() {
   localStorage.setItem('pg_prog_date', todayKey())
-  localStorage.setItem('pg_prog_ci',   ci)
   localStorage.setItem('pg_prog_res',  JSON.stringify(results))
   localStorage.setItem('pg_prog_qs',   JSON.stringify(questions))
 }
+
 function clearProgress() {
-  ['pg_prog_date','pg_prog_ci','pg_prog_res','pg_prog_qs'].forEach(k => localStorage.removeItem(k))
+  ['pg_prog_date','pg_prog_res','pg_prog_qs'].forEach(k => localStorage.removeItem(k))
 }
+
 function hasProgress() {
   return localStorage.getItem('pg_prog_date') === todayKey()
     && localStorage.getItem('pg_prog_ci') !== null
@@ -449,9 +450,9 @@ async function doGoogleSignIn() {
   if (error) showMsg(error.message, 'error')
 }
 
-async function doSignOut() {
+async function signOut() {
   await db.auth.signOut()
-  // onAuthStateChange fires SIGNED_OUT → renderIntro() runs automatically
+  // onAuthStateChange fires SIGNED_OUT automatically — don't call initIntro() here
 }
 
 function showMsg(text, type) {
@@ -624,7 +625,7 @@ async function resumeGame() {
   const savedQs = JSON.parse(localStorage.getItem('pg_prog_qs') || '[]')
   questions = savedQs.length ? savedQs : await fetchQuestions()
   results   = JSON.parse(localStorage.getItem('pg_prog_res') || '[]')
-  ci        = parseInt(localStorage.getItem('pg_prog_ci') || '0')
+  ci        = results.length
   guessed   = false
   for (let i=0; i<5; i++) document.getElementById(`d${i}`).className = 'dot'
   results.forEach((ok, i) => document.getElementById(`d${i}`).classList.add(ok ? 'ok' : 'no'))
@@ -734,20 +735,26 @@ document.getElementById('copybtn').addEventListener('click',        doCopy)
 
 // ── BOOT ──────────────────────────────────────────────
 function boot() {
+  // onAuthStateChange is the ONLY driver of UI updates.
+  // INITIAL_SESSION fires on every page load — signed in or not —
+  // so initIntro() always runs exactly once at startup.
   db.auth.onAuthStateChange(async (event, session) => {
     console.log('auth:', event, session?.user?.email ?? 'none')
     currentUser = session?.user ?? null
 
-    // Clean the URL only after Supabase has already read the token
+    // Clean OAuth hash only after Supabase has already read it
     if (window.location.hash.includes('access_token')) {
       window.history.replaceState({}, document.title, window.location.pathname)
     }
 
-    await renderIntro()
+    await initIntro()
 
+    // After Google sign-in, navigate back from the sign-in screen
     if (event === 'SIGNED_IN' && document.getElementById('s-signin').classList.contains('active')) {
       goBack()
     }
+
+    // If signed out while on results screen, update auth area there too
     if (event === 'SIGNED_OUT' && document.getElementById('s-done').classList.contains('active')) {
       renderDoneAuth()
     }
