@@ -181,8 +181,6 @@
     /* ── Suggest screen ── */
     .page-title { font-size: 28px; font-weight: 700; letter-spacing: -.025em; margin-bottom: .4rem; }
     .page-sub { font-size: 15px; color: var(--text2); line-height: 1.6; margin-bottom: .35rem; }
-    .sunday-badge { display: inline-flex; align-items: center; gap: 6px; background: var(--amber-bg); color: var(--amber-tx); font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 100px; margin-bottom: 1.75rem; }
-    .sunday-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--amber-tx); }
     .sug-section { margin-bottom: 1.75rem; }
     .sug-section-title { font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--text3); margin-bottom: .85rem; }
     .divider { height: 1px; background: var(--border); margin: 1.75rem 0; }
@@ -319,7 +317,7 @@
     <div class="si-sub">Save your streak and score history across all your devices.</div>
     <div class="si-feat"><div class="si-dot"></div><div class="si-ftxt">Streak synced — never lose your progress</div></div>
     <div class="si-feat"><div class="si-dot"></div><div class="si-ftxt">Full score history and distribution chart</div></div>
-    <div class="si-feat"><div class="si-dot"></div><div class="si-ftxt">Suggest questions for Community Sunday</div></div>
+    <div class="si-feat"><div class="si-dot"></div><div class="si-ftxt">Suggest questions for future games</div></div>
     <div style="height:1rem"></div>
     <div class="fi"><label>Email</label><input type="email" id="si-email" placeholder="you@example.com" /></div>
     <div class="fi"><label>Password</label><input type="password" id="si-pw" placeholder="••••••••" /></div>
@@ -339,7 +337,6 @@
     <button class="back-link" id="sug-back">← Back</button>
     <div class="page-title">Suggest a question</div>
     <div class="page-sub">Got a surprising statistic? Submit it and it might be featured in a future game.</div>
-    <div class="sunday-badge"><div class="sunday-dot"></div>Community Sunday — suggested questions every week</div>
 
     <div class="status-msg" id="sug-status"></div>
 
@@ -347,7 +344,7 @@
       <div style="background:var(--green-bg);border-radius:var(--rl);padding:1.5rem;text-align:center;margin-bottom:1.5rem">
         <div style="font-size:28px;margin-bottom:.5rem">✓</div>
         <div style="font-size:16px;font-weight:600;color:var(--green-tx);margin-bottom:.3rem">Question submitted!</div>
-        <div style="font-size:13px;color:var(--green-tx);opacity:.8">We'll review it and may feature it on a Community Sunday.</div>
+        <div style="font-size:13px;color:var(--green-tx);opacity:.8">Your question will be reviewed and it may be featured in a future game.</div>
       </div>
       <button class="btn-primary" id="sug-another-btn">Submit another</button>
     </div>
@@ -725,7 +722,7 @@ function renderDoneAuth() {
   if (currentUser) {
     const cta = document.createElement('div')
     cta.className = 'suggest-cta'
-    cta.innerHTML = `<div><div class="suggest-cta-left">Suggest a question</div><div class="suggest-cta-sub">Submit a stat for Community Sunday</div></div><div class="suggest-cta-arrow">→</div>`
+    cta.innerHTML = `<div><div class="suggest-cta-left">Suggest a question</div><div class="suggest-cta-sub">Submit a stat for a future game</div></div><div class="suggest-cta-arrow">→</div>`
     cta.addEventListener('click', () => goSuggest('done'))
     sugEl.appendChild(cta)
   }
