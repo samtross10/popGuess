@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Suggest a Question — PopGuess</title>
+  <link rel="icon" type="image/png" href="favicon.png">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #ffffff;
+      --bg2:      #f5f4f0;
+      --bg3:      #eeedea;
+      --text:     #111110;
+      --text2:    #6b6a66;
+      --text3:    #a09f9b;
+      --border:   rgba(0,0,0,0.10);
+      --border2:  rgba(0,0,0,0.18);
+      --green-bg: #e8f5ec;
+      --green-tx: #1a6633;
+      --green-bd: rgba(26,102,51,0.25);
+      --red-bg:   #fdecea;
+      --red-tx:   #a32d2d;
+      --amber-bg: #fef3e2;
+      --amber-tx: #92400e;
+      --r:        10px;
+      --rl:       14px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg:       #111110;
+        --bg2:      #1c1c1b;
+        --bg3:      #252523;
+        --text:     #f0efe9;
+        --text2:    #8a8a85;
+        --text3:    #5c5c58;
+        --border:   rgba(255,255,255,0.10);
+        --border2:  rgba(255,255,255,0.18);
+        --green-bg: #0d2e18;
+        --green-tx: #4ade80;
+        --green-bd: rgba(74,222,128,0.2);
+        --red-bg:   #2d0f0f;
+        --red-tx:   #f87171;
+        --amber-bg: #2d1f00;
+        --amber-tx: #fbbf24;
+      }
+    }
+
+    html, body { background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    .pg { max-width: 480px; margin: 0 auto; padding: 1.5rem 1.25rem 4rem; }
+
+    .hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+    .logo { font-size: 18px; font-weight: 600; letter-spacing: -.01em; text-decoration: none; color: var(--text); }
+    .logo em { font-style: normal; color: var(--green-tx); }
+    .back-chip { font-size: 12px; color: var(--text2); padding: 5px 11px; border-radius: 100px; border: 1px solid var(--border); background: transparent; cursor: pointer; text-decoration: none; transition: background .12s; white-space: nowrap; }
+    .back-chip:hover { background: var(--bg2); }
+
+    .page-title { font-size: 28px; font-weight: 700; letter-spacing: -.025em; margin-bottom: .4rem; }
+    .page-sub { font-size: 15px; color: var(--text2); line-height: 1.6; margin-bottom: .35rem; }
+
+    .sunday-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--amber-bg); color: var(--amber-tx);
+      font-size: 12px; font-weight: 600;
+      padding: 5px 10px; border-radius: 100px;
+      margin-bottom: 1.75rem; letter-spacing: .02em;
+    }
+    .sunday-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--amber-tx); }
+
+    /* Form sections */
+    .section { margin-bottom: 1.75rem; }
+    .section-title { font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--text3); margin-bottom: .85rem; }
+
+    .fi { margin-bottom: .85rem; }
+    .fi label { display: block; font-size: 12px; color: var(--text2); margin-bottom: .3rem; }
+    .fi input, .fi select, .fi textarea {
+      width: 100%; padding: 10px 12px;
+      border-radius: var(--r); border: 1px solid var(--border2);
+      background: var(--bg); font-size: 14px; font-family: inherit;
+      color: var(--text); outline: none; appearance: none;
+    }
+    .fi input:focus, .fi select:focus, .fi textarea:focus { border-color: var(--text2); }
+    .fi textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
+    .fi .hint { font-size: 11.5px; color: var(--text3); margin-top: .3rem; }
+
+    /* Two column row */
+    .fi-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: .85rem; }
+    .fi-row .fi { margin-bottom: 0; }
+
+    /* Preview card */
+    .preview-wrap { margin-bottom: 1.75rem; }
+    .preview-label { font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--text3); margin-bottom: .75rem; }
+    .preview-card {
+      background: var(--bg2); border-radius: var(--rl);
+      padding: 1.25rem 1.5rem; text-align: center;
+      border: 1px solid var(--border);
+    }
+    .preview-cat { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--text3); margin-bottom: .4rem; }
+    .preview-q { font-size: 15px; line-height: 1.55; color: var(--text); margin-bottom: 1rem; text-align: left; }
+    .preview-thr-label { font-size: 12px; color: var(--text2); margin-bottom: .3rem; }
+    .preview-thr { font-size: 36px; font-weight: 700; letter-spacing: -.025em; line-height: 1; margin-bottom: .85rem; }
+    .preview-ans-row { display: flex; justify-content: center; gap: 8px; }
+    .preview-ans-tag {
+      font-size: 12px; font-weight: 600; padding: 5px 12px;
+      border-radius: 100px; border: 1px solid var(--border2);
+      color: var(--text2); background: var(--bg);
+    }
+    .preview-ans-tag.correct { background: var(--green-bg); color: var(--green-tx); border-color: var(--green-bd); }
+
+    /* Submit */
+    .btn-primary {
+      width: 100%; padding: 14px; border-radius: var(--r); border: none;
+      background: var(--text); color: var(--bg);
+      font-size: 15px; font-weight: 500; cursor: pointer; font-family: inherit;
+      transition: opacity .15s; margin-bottom: .75rem;
+    }
+    .btn-primary:hover { opacity: .82; }
+    .btn-primary:disabled { opacity: .35; cursor: default; }
+
+    /* Status messages */
+    .status-msg { border-radius: var(--r); padding: 1rem 1.1rem; font-size: 14px; line-height: 1.5; margin-bottom: 1rem; display: none; }
+    .status-msg.error   { background: var(--red-bg);   color: var(--red-tx); }
+    .status-msg.success { background: var(--green-bg); color: var(--green-tx); }
+
+    /* My suggestions list */
+    .suggestions-list { margin-top: 2.5rem; }
+    .sug-hdr { font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--text3); margin-bottom: .85rem; border-top: 1px solid var(--border); padding-top: 1.5rem; }
+    .sug-item { padding: .85rem 0; border-top: 1px solid var(--border); }
+    .sug-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: .3rem; }
+    .sug-q { font-size: 14px; color: var(--text); line-height: 1.4; flex: 1; }
+    .sug-badge { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 100px; white-space: nowrap; flex-shrink: 0; }
+    .sug-badge.pending  { background: var(--amber-bg); color: var(--amber-tx); }
+    .sug-badge.approved { background: var(--green-bg); color: var(--green-tx); }
+    .sug-badge.rejected { background: var(--red-bg);   color: var(--red-tx); }
+    .sug-meta { font-size: 12px; color: var(--text3); }
+    .sug-empty { font-size: 14px; color: var(--text3); padding: .75rem 0; }
+
+    /* Direction toggle */
+    .dir-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .dir-btn {
+      padding: 10px 8px; border-radius: var(--r);
+      border: 1px solid var(--border2); background: var(--bg);
+      font-size: 14px; font-weight: 500; color: var(--text2);
+      cursor: pointer; font-family: inherit; transition: all .12s; text-align: center;
+    }
+    .dir-btn.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+    .dir-btn:hover:not(.active) { background: var(--bg2); }
+
+    /* Divider */
+    .divider { height: 1px; background: var(--border); margin: 1.75rem 0; }
+  </style>
+</head>
+<body>
+<div class="pg">
+
+  <div class="hdr">
+    <a class="logo" href="index.html">Pop<em>Guess</em></a>
+    <a class="back-chip" href="index.html">← Back to game</a>
+  </div>
+
+  <div class="page-title">Suggest a question</div>
+  <div class="page-sub">Got a surprising statistic? Submit it and it might be featured in a future game.</div>
+  <div class="sunday-badge"><div class="sunday-dot"></div>Community Sunday — suggested questions played every week</div>
+
+  <!-- STATUS -->
+  <div class="status-msg" id="status-msg"></div>
+
+  <!-- SUCCESS STATE (hidden until submitted) -->
+  <div id="success-screen" style="display:none">
+    <div style="background:var(--green-bg);border-radius:var(--rl);padding:1.5rem;text-align:center;margin-bottom:1.5rem">
+      <div style="font-size:32px;margin-bottom:.5rem">✓</div>
+      <div style="font-size:16px;font-weight:600;color:var(--green-tx);margin-bottom:.3rem">Question submitted!</div>
+      <div style="font-size:13px;color:var(--green-tx);opacity:.8">We'll review it and may feature it on a Community Sunday.</div>
+    </div>
+    <button class="btn-primary" id="submit-another-btn">Submit another</button>
+  </div>
+
+  <!-- FORM -->
+  <div id="form-screen">
+
+    <div class="section">
+      <div class="section-title">The question</div>
+
+      <div class="fi">
+        <label>Category</label>
+        <select id="f-category">
+          <option value="">Select a category…</option>
+          <option>Animals</option>
+          <option>Culture</option>
+          <option>Earth</option>
+          <option>Economy</option>
+          <option>Food</option>
+          <option>History</option>
+          <option>Human Body</option>
+          <option>Nature</option>
+          <option>Society</option>
+          <option>Space</option>
+          <option>Technology</option>
+          <option>Other</option>
+        </select>
+      </div>
+
+      <div class="fi">
+        <label>Question</label>
+        <textarea id="f-question" placeholder="e.g. How many bones does an adult human have?"></textarea>
+        <div class="hint">Write it as a "how many" or "what percentage" question.</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="section">
+      <div class="section-title">The numbers</div>
+
+      <div class="fi-row">
+        <div class="fi">
+          <label>Threshold (the shown number)</label>
+          <input type="number" id="f-threshold" placeholder="e.g. 300" />
+        </div>
+        <div class="fi">
+          <label>Display label</label>
+          <input type="text" id="f-threshold-display" placeholder="e.g. 300 bones" />
+        </div>
+      </div>
+
+      <div class="fi">
+        <label>Is the real answer higher or lower than the threshold?</label>
+        <div class="dir-toggle">
+          <button class="dir-btn" id="dir-higher" type="button">↑ Higher</button>
+          <button class="dir-btn" id="dir-lower"  type="button">↓ Lower</button>
+        </div>
+      </div>
+
+      <div class="fi-row">
+        <div class="fi">
+          <label>Actual answer (number)</label>
+          <input type="number" id="f-answer" placeholder="e.g. 206" />
+        </div>
+        <div class="fi">
+          <label>Display label</label>
+          <input type="text" id="f-answer-display" placeholder="e.g. 206 bones" />
+        </div>
+      </div>
+
+      <div class="fi">
+        <label>Source</label>
+        <input type="text" id="f-source" placeholder="e.g. Gray's Anatomy" />
+        <div class="hint">Include the publication or organisation name. A year helps too.</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- LIVE PREVIEW -->
+    <div class="preview-wrap">
+      <div class="preview-label">Preview</div>
+      <div class="preview-card">
+        <div class="preview-cat" id="prev-cat">Category</div>
+        <div class="preview-q" id="prev-q">Your question will appear here…</div>
+        <div class="preview-thr-label">Is the real answer higher or lower than</div>
+        <div class="preview-thr" id="prev-thr">—</div>
+        <div class="preview-ans-row" id="prev-ans-row">
+          <div class="preview-ans-tag" id="prev-higher">↑ Higher</div>
+          <div class="preview-ans-tag" id="prev-lower">↓ Lower</div>
+        </div>
+        <div style="margin-top:.85rem;font-size:12px;color:var(--text3)" id="prev-answer"></div>
+      </div>
+    </div>
+
+    <button class="btn-primary" id="submit-btn">Submit question</button>
+    <div style="font-size:11.5px;color:var(--text3);text-align:center">
+      We review all submissions before they go live. Please only submit real, verifiable statistics.
+    </div>
+
+  </div>
+
+  <!-- MY PAST SUGGESTIONS -->
+  <div class="suggestions-list" id="my-suggestions" style="display:none">
+    <div class="sug-hdr">Your past submissions</div>
+    <div id="sug-list"></div>
+  </div>
+
+</div>
+<script>
+// ── CONFIG ───────────────────────────────────────────
+const SUPABASE_URL = 'https://sjwbcmnjzuxhnxesvdjr.supabase.co'
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqd2JjbW5qenV4aG54ZXN2ZGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4ODQ1MTUsImV4cCI6MjA4OTQ2MDUxNX0.HFR3MRqg3xeaMJEPkCK7b_hhD8hkWFCsWAoipww_0jU'
+
+const { createClient } = supabase
+const db = createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { persistSession: true, autoRefreshToken: true }
+})
+
+let currentUser = null
+let direction   = null  // 'higher' | 'lower'
+
+// ── DIRECTION TOGGLE ──────────────────────────────────
+document.getElementById('dir-higher').addEventListener('click', () => setDir('higher'))
+document.getElementById('dir-lower').addEventListener('click',  () => setDir('lower'))
+
+function setDir(dir) {
+  direction = dir
+  document.getElementById('dir-higher').classList.toggle('active', dir === 'higher')
+  document.getElementById('dir-lower').classList.toggle('active',  dir === 'lower')
+  updatePreview()
+}
+
+// ── LIVE PREVIEW ──────────────────────────────────────
+const fields = ['f-category','f-question','f-threshold','f-threshold-display','f-answer','f-answer-display']
+fields.forEach(id => {
+  const el = document.getElementById(id)
+  if (el) el.addEventListener('input', updatePreview)
+})
+
+function updatePreview() {
+  const cat    = document.getElementById('f-category').value
+  const q      = document.getElementById('f-question').value.trim()
+  const thrD   = document.getElementById('f-threshold-display').value.trim()
+  const ansD   = document.getElementById('f-answer-display').value.trim()
+
+  document.getElementById('prev-cat').textContent = cat || 'Category'
+  document.getElementById('prev-q').textContent   = q   || 'Your question will appear here…'
+  document.getElementById('prev-thr').textContent = thrD || '—'
+
+  const higher = document.getElementById('prev-higher')
+  const lower  = document.getElementById('prev-lower')
+  higher.className = 'preview-ans-tag' + (direction === 'higher' ? ' correct' : '')
+  lower.className  = 'preview-ans-tag' + (direction === 'lower'  ? ' correct' : '')
+
+  document.getElementById('prev-answer').textContent = ansD
+    ? `Real answer: ${ansD}`
+    : ''
+}
+
+// ── SUBMIT ────────────────────────────────────────────
+document.getElementById('submit-btn').addEventListener('click', submitSuggestion)
+
+async function submitSuggestion() {
+  const category          = document.getElementById('f-category').value
+  const question          = document.getElementById('f-question').value.trim()
+  const threshold         = parseFloat(document.getElementById('f-threshold').value)
+  const threshold_display = document.getElementById('f-threshold-display').value.trim()
+  const answer            = parseFloat(document.getElementById('f-answer').value)
+  const answer_display    = document.getElementById('f-answer-display').value.trim()
+  const source            = document.getElementById('f-source').value.trim()
+
+  // Validation
+  if (!category)                  { showStatus('Please select a category.', 'error'); return }
+  if (!question)                  { showStatus('Please enter your question.', 'error'); return }
+  if (isNaN(threshold))           { showStatus('Please enter the threshold number.', 'error'); return }
+  if (!threshold_display)         { showStatus('Please enter the threshold display label.', 'error'); return }
+  if (!direction)                 { showStatus('Please select whether the answer is higher or lower.', 'error'); return }
+  if (isNaN(answer))              { showStatus('Please enter the actual answer.', 'error'); return }
+  if (!answer_display)            { showStatus('Please enter the answer display label.', 'error'); return }
+  if (!source)                    { showStatus('Please enter a source.', 'error'); return }
+
+  const btn = document.getElementById('submit-btn')
+  btn.textContent = 'Submitting…'; btn.disabled = true
+
+  const row = {
+    category, question,
+    threshold, threshold_display,
+    answer, answer_display,
+    source, direction,
+    user_id: currentUser?.id ?? null,
+    email:   currentUser?.email ?? null,
+  }
+
+  const { error } = await db.from('suggestions').insert(row)
+
+  btn.textContent = 'Submit question'; btn.disabled = false
+
+  if (error) {
+    showStatus('Something went wrong. Please try again.', 'error')
+    console.error(error)
+    return
+  }
+
+  // Show success screen
+  document.getElementById('form-screen').style.display    = 'none'
+  document.getElementById('success-screen').style.display = 'block'
+  document.getElementById('status-msg').style.display     = 'none'
+
+  // Reload suggestions list
+  loadMySuggestions()
+}
+
+// ── SUBMIT ANOTHER ────────────────────────────────────
+document.getElementById('submit-another-btn').addEventListener('click', () => {
+  document.getElementById('success-screen').style.display = 'none'
+  document.getElementById('form-screen').style.display    = 'block'
+  resetForm()
+})
+
+function resetForm() {
+  fields.forEach(id => {
+    const el = document.getElementById(id)
+    if (el) { if (el.tagName === 'SELECT') el.value = ''; else el.value = '' }
+  })
+  direction = null
+  document.getElementById('dir-higher').classList.remove('active')
+  document.getElementById('dir-lower').classList.remove('active')
+  updatePreview()
+}
+
+// ── STATUS MESSAGE ────────────────────────────────────
+function showStatus(text, type) {
+  const el = document.getElementById('status-msg')
+  el.textContent = text
+  el.className = `status-msg ${type}`
+  el.style.display = 'block'
+  setTimeout(() => el.style.display = 'none', 5000)
+}
+
+// ── MY PAST SUGGESTIONS ───────────────────────────────
+async function loadMySuggestions() {
+  if (!currentUser) return
+
+  const { data, error } = await db.from('suggestions')
+    .select('question, status, created_at, category')
+    .eq('user_id', currentUser.id)
+    .order('created_at', { ascending: false })
+    .limit(10)
+
+  if (error || !data) return
+
+  const wrap = document.getElementById('my-suggestions')
+  const list = document.getElementById('sug-list')
+  wrap.style.display = 'block'
+  list.innerHTML = ''
+
+  if (data.length === 0) {
+    list.innerHTML = '<div class="sug-empty">No submissions yet.</div>'
+    return
+  }
+
+  data.forEach(s => {
+    const date = new Date(s.created_at).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' })
+    const d = document.createElement('div')
+    d.className = 'sug-item'
+    d.innerHTML = `
+      <div class="sug-top">
+        <div class="sug-q">${s.question}</div>
+        <div class="sug-badge ${s.status}">${s.status}</div>
+      </div>
+      <div class="sug-meta">${s.category} · Submitted ${date}</div>`
+    list.appendChild(d)
+  })
+}
+
+// ── BOOT ──────────────────────────────────────────────
+db.auth.onAuthStateChange(async (_event, session) => {
+  currentUser = session?.user ?? null
+  loadMySuggestions()
+})
+
+updatePreview()
+</script>
+</body>
+</html>
