@@ -249,7 +249,7 @@
         <div class="already-msg">You've already played today. Come back tomorrow!</div>
       </div>
     </div>
-    <button class="btn-primary" id="play-btn">Play today's game</button>
+    <div id="play-btn-wrap"></div>
     <div id="intro-bottom-btn"></div>
   </div>
 
@@ -676,31 +676,25 @@ async function renderIntro() {
   document.getElementById('already-wrap').style.display = played ? 'block' : 'none'
   if (played) document.getElementById('already-score-lbl').textContent = `${lastScore}/5`
 
-  // Show/hide Community Sunday badge on daycard
-  const existingBadge = document.getElementById('sunday-badge-inline')
-  if (existingBadge) existingBadge.remove()
-  if (sunday) {
-    const badge = document.createElement('div')
-    badge.id = 'sunday-badge-inline'
-    badge.style.cssText = 'display:inline-flex;align-items:center;gap:6px;background:var(--amber-bg);color:var(--amber-tx);font-size:11px;font-weight:600;padding:4px 9px;border-radius:100px;margin-top:6px;'
-    badge.innerHTML = '<div style="width:5px;height:5px;border-radius:50%;background:var(--amber-tx)"></div>Community Sunday'
-    document.getElementById('daycard-wrap').appendChild(badge)
-  }
-
-  const oldBtn = document.getElementById('play-btn')
-  const newBtn = oldBtn.cloneNode(true)
-  oldBtn.parentNode.replaceChild(newBtn, oldBtn)
-
+  // Always rebuild play button fresh — same pattern as suggest button
+  // so there are never stale listeners
+  const playWrap = document.getElementById('play-btn-wrap')
+  playWrap.innerHTML = ''
+  const playBtn = document.createElement('button')
+  playBtn.className = 'btn-primary'
   if (played) {
-    newBtn.textContent = 'Come back tomorrow'; newBtn.disabled = true
+    playBtn.textContent = 'Come back tomorrow'
+    playBtn.disabled = true
   } else if (hasProgress()) {
-    newBtn.textContent = 'Resume puzzle'; newBtn.disabled = false
-    newBtn.addEventListener('click', resumeGame)
+    playBtn.textContent = 'Resume puzzle'
+    playBtn.disabled = false
+    playBtn.addEventListener('click', resumeGame)
   } else {
-    newBtn.textContent = sunday ? "Play Community Sunday" : "Play today's game"
-    newBtn.disabled = false
-    newBtn.addEventListener('click', startGame)
+    playBtn.textContent = sunday ? 'Play Community Sunday' : "Play today's game"
+    playBtn.disabled = false
+    playBtn.addEventListener('click', startGame)
   }
+  playWrap.appendChild(playBtn)
 
   // Bottom button area — rebuilt fresh every time
   const bot = document.getElementById('intro-bottom-btn')
