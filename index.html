@@ -182,10 +182,9 @@
         <div class="already-score" id="already-score-lbl"></div>
         <div class="already-msg">You've already played today. Come back tomorrow!</div>
       </div>
-      <button class="btn-secondary" id="show-stats-btn" style="margin-top:.75rem">View my stats</button>
     </div>
     <button class="btn-primary" id="play-btn">Play today's game</button>
-    <button class="btn-secondary" id="intro-si-btn">Sign in to sync your streak</button>
+    <div id="intro-bottom-btn"></div>
   </div>
 
   <!-- GAME -->
@@ -468,7 +467,7 @@ async function renderIntro() {
   document.getElementById('day-date-lbl').textContent = `5 questions · ${today}`
   document.getElementById('day-game-lbl').textContent = `Today's game · #${dayNum()}`
 
-  // Rebuild auth chip completely (no stale listeners)
+  // Rebuild auth chip (always fresh — no stale listeners)
   const authEl = document.getElementById('intro-auth-el')
   authEl.innerHTML = ''
   if (currentUser) {
@@ -477,14 +476,10 @@ async function renderIntro() {
     chip.textContent = `${currentUser.email.split('@')[0]} · Sign out`
     chip.addEventListener('click', doSignOut)
     authEl.appendChild(chip)
-    document.getElementById('intro-si-btn').style.display = 'none'
-  } else {
-    document.getElementById('intro-si-btn').style.display = 'block'
   }
 
-  // Check played state
+  // Check played state — remote check for signed-in users
   let played = playedToday(), lastScore = getLocal().lastScore
-
   if (currentUser && !played) {
     const { data } = await db.from('plays').select('score,answers')
       .eq('user_id', currentUser.id).eq('play_date', todayKey()).limit(1).maybeSingle()
@@ -496,17 +491,21 @@ async function renderIntro() {
     }
   }
 
-  // Clone play button to wipe any old event listeners
+  // Already-played card
+  const alreadyWrap = document.getElementById('already-wrap')
+  alreadyWrap.style.display = played ? 'block' : 'none'
+  if (played) {
+    document.getElementById('already-score-lbl').textContent = `${lastScore}/5`
+  }
+
+  // Clone play button to wipe old listeners
   const oldBtn = document.getElementById('play-btn')
   const newBtn = oldBtn.cloneNode(true)
   oldBtn.parentNode.replaceChild(newBtn, oldBtn)
-  document.getElementById('already-wrap').style.display = 'none'
 
   if (played) {
     newBtn.textContent = 'Come back tomorrow'
     newBtn.disabled    = true
-    document.getElementById('already-wrap').style.display = 'block'
-    document.getElementById('already-score-lbl').textContent = `${lastScore}/5`
   } else if (hasProgress()) {
     newBtn.textContent = 'Resume puzzle'
     newBtn.disabled    = false
@@ -515,6 +514,39 @@ async function renderIntro() {
     newBtn.textContent = "Play today's game"
     newBtn.disabled    = false
     newBtn.addEventListener('click', startGame)
+  }
+
+  // Rebuild bottom button area — always fresh
+  // Signed in:  played → "View my stats"   |  not played → "Suggest a question"
+  // Signed out: always → "Sign in to sync your streak"
+  const bottomEl = document.getElementById('intro-bottom-btn')
+  bottomEl.innerHTML = ''
+
+  if (currentUser) {
+    if (played) {
+      // Show stats button
+      const statsBtn = document.createElement('button')
+      statsBtn.className = 'btn-secondary'
+      statsBtn.textContent = 'View my stats'
+      statsBtn.addEventListener('click', showStats)
+      bottomEl.appendChild(statsBtn)
+    }
+    // Always show suggest button for signed-in users
+    const sugBtn = document.createElement('a')
+    sugBtn.href = 'suggest.html'
+    sugBtn.className = 'btn-secondary'
+    sugBtn.textContent = 'Suggest a question →'
+    sugBtn.style.display = 'block'
+    sugBtn.style.textAlign = 'center'
+    sugBtn.style.textDecoration = 'none'
+    bottomEl.appendChild(sugBtn)
+  } else {
+    // Guest — show sign in button
+    const siBtn = document.createElement('button')
+    siBtn.className = 'btn-secondary'
+    siBtn.textContent = 'Sign in to sync your streak'
+    siBtn.addEventListener('click', () => goSignIn('intro'))
+    bottomEl.appendChild(siBtn)
   }
 }
 
@@ -729,8 +761,7 @@ function doCopy() {
 }
 
 // ── STATIC BUTTON WIRING (once, on page load) ─────────
-document.getElementById('intro-si-btn').addEventListener('click',  () => goSignIn('intro'))
-document.getElementById('show-stats-btn').addEventListener('click', showStats)
+// Note: intro bottom buttons (sign-in, stats, suggest) are wired inside renderIntro()
 document.getElementById('si-back').addEventListener('click',        goBack)
 document.getElementById('si-submit').addEventListener('click',      doSignIn)
 document.getElementById('si-google').addEventListener('click',      doGoogleSignIn)
@@ -743,13 +774,14 @@ document.getElementById('copybtn').addEventListener('click',        doCopy)
 // If the user played as a guest today then signed in,
 // this attaches that play to their account.
 async function claimLocalPlay(user) {
+  // Only if they actually played today locally
   if (!playedToday()) return
 
   const lastScore = getLocal().lastScore
   const lastAns   = JSON.parse(localStorage.getItem('pg_last_ans') || '[]')
   if (!lastAns.length) return
 
-  // Check if they already have a named row for today
+  // Check if they already have a row in Supabase for today
   const { data: existing } = await db.from('plays')
     .select('id')
     .eq('user_id', user.id)
@@ -757,33 +789,16 @@ async function claimLocalPlay(user) {
     .limit(1)
     .maybeSingle()
 
-  if (existing) return // Already have a row — nothing to do
+  // Already saved — nothing to do
+  if (existing) return
 
-  // Find the anonymous row we inserted during the game
-  // Match on date + score + answers to make sure it's ours
-  const { data: anonRow } = await db.from('plays')
-    .select('id')
-    .is('user_id', null)
-    .eq('play_date', todayKey())
-    .eq('score', lastScore)
-    .limit(1)
-    .maybeSingle()
-
-  if (anonRow) {
-    // Claim it by assigning our user_id
-    const { error } = await db.from('plays')
-      .update({ user_id: user.id })
-      .eq('id', anonRow.id)
-    if (error) console.error('claimLocalPlay update:', error.message)
-    else console.log('Anonymous play claimed to account:', user.email)
-  } else {
-    // No anonymous row found — insert fresh (e.g. played on a different device)
-    const { error } = await db.from('plays').upsert(
-      { user_id: user.id, play_date: todayKey(), score: lastScore, answers: lastAns },
-      { onConflict: 'user_id,play_date', ignoreDuplicates: true }
-    )
-    if (error) console.error('claimLocalPlay insert:', error.message)
-  }
+  // Upsert the local play under their account
+  const { error } = await db.from('plays').upsert(
+    { user_id: user.id, play_date: todayKey(), score: lastScore, answers: lastAns },
+    { onConflict: 'user_id,play_date', ignoreDuplicates: true }
+  )
+  if (error) console.error('claimLocalPlay:', error.message)
+  else console.log('Local play claimed to account:', user.email)
 }
 
 // ── BOOT ──────────────────────────────────────────────
