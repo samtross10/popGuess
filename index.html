@@ -683,6 +683,10 @@ async function done() {
     const s = getLocal()
     stats = { streak:localStreak, plays:s.plays, dist:s.dist,
               avg: s.plays ? (s.totalScore/s.plays).toFixed(1) : finalScore.toFixed(1) }
+  } else {
+    // Guard: Supabase may not have committed the new row yet
+    stats.streak = Math.max(stats.streak, localStreak)
+    stats.plays  = Math.max(stats.plays, 1)
   }
 
   await renderResults(finalScore, results, stats)
@@ -735,13 +739,55 @@ document.getElementById('blo').addEventListener('click',            () => guess(
 document.getElementById('nxtbtn').addEventListener('click',         nextQ)
 document.getElementById('copybtn').addEventListener('click',        doCopy)
 
+// ── CLAIM LOCAL PLAY ON SIGN-IN ──────────────────────
+// If the user played as a guest today then signed in,
+// this attaches that play to their account.
+async function claimLocalPlay(user) {
+  if (!playedToday()) return
+
+  const lastScore = getLocal().lastScore
+  const lastAns   = JSON.parse(localStorage.getItem('pg_last_ans') || '[]')
+  if (!lastAns.length) return
+
+  // Check if they already have a named row for today
+  const { data: existing } = await db.from('plays')
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('play_date', todayKey())
+    .limit(1)
+    .maybeSingle()
+
+  if (existing) return // Already have a row — nothing to do
+
+  // Find the anonymous row we inserted during the game
+  // Match on date + score + answers to make sure it's ours
+  const { data: anonRow } = await db.from('plays')
+    .select('id')
+    .is('user_id', null)
+    .eq('play_date', todayKey())
+    .eq('score', lastScore)
+    .limit(1)
+    .maybeSingle()
+
+  if (anonRow) {
+    // Claim it by assigning our user_id
+    const { error } = await db.from('plays')
+      .update({ user_id: user.id })
+      .eq('id', anonRow.id)
+    if (error) console.error('claimLocalPlay update:', error.message)
+    else console.log('Anonymous play claimed to account:', user.email)
+  } else {
+    // No anonymous row found — insert fresh (e.g. played on a different device)
+    const { error } = await db.from('plays').upsert(
+      { user_id: user.id, play_date: todayKey(), score: lastScore, answers: lastAns },
+      { onConflict: 'user_id,play_date', ignoreDuplicates: true }
+    )
+    if (error) console.error('claimLocalPlay insert:', error.message)
+  }
+}
+
 // ── BOOT ──────────────────────────────────────────────
 function boot() {
-  // Clean up OAuth hash immediately
-  if (window.location.hash.includes('access_token')) {
-    window.history.replaceState({}, document.title, window.location.pathname)
-  }
-
   // Single auth listener — the only place currentUser is set
   // INITIAL_SESSION fires on every page load (signed in or not)
   // SIGNED_IN fires after email login or Google OAuth redirect
@@ -749,10 +795,21 @@ function boot() {
   db.auth.onAuthStateChange(async (event, session) => {
     console.log('auth:', event, session?.user?.email ?? 'none')
     currentUser = session?.user ?? null
+
+    // Clean OAuth hash AFTER Supabase has already read it from the URL
+    if (window.location.hash.includes('access_token')) {
+      window.history.replaceState({}, document.title, window.location.pathname)
+    }
+
     await renderIntro()
 
-    if (event === 'SIGNED_IN' && document.getElementById('s-signin').classList.contains('active')) {
-      goBack()
+    if (event === 'SIGNED_IN') {
+      // Claim any locally completed play from today into the account
+      if (currentUser) await claimLocalPlay(currentUser)
+
+      if (document.getElementById('s-signin').classList.contains('active')) {
+        goBack()
+      }
     }
     if (event === 'SIGNED_OUT' && document.getElementById('s-done').classList.contains('active')) {
       renderDoneAuth()
