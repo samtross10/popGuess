@@ -24,6 +24,8 @@
       --red-bg:    #fdecea;
       --red-tx:    #a32d2d;
       --red-bd:    rgba(163,45,45,0.25);
+      --amber-bg:  #fef3e2;
+      --amber-tx:  #92400e;
       --r:         10px;
       --rl:        14px;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
@@ -45,6 +47,8 @@
         --red-bg:   #2d0f0f;
         --red-tx:   #f87171;
         --red-bd:   rgba(248,113,113,0.2);
+        --amber-bg: #2d1f00;
+        --amber-tx: #fbbf24;
       }
     }
 
@@ -52,15 +56,32 @@
     .pg { max-width: 480px; margin: 0 auto; padding: 1.5rem 1.25rem 4rem; }
     .screen { display: none; flex-direction: column; }
     .screen.active { display: flex; }
+
+    /* ── Shared layout ── */
     .hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
     .logo { font-size: 18px; font-weight: 600; letter-spacing: -.01em; }
     .logo em { font-style: normal; color: var(--green-tx); }
+    .user-chip { font-size: 12px; color: var(--text2); padding: 5px 11px; border-radius: 100px; border: 1px solid var(--border); background: transparent; cursor: pointer; font-family: inherit; transition: background .12s; white-space: nowrap; }
+    .user-chip:hover { background: var(--bg2); }
+
+    /* ── Shared buttons ── */
+    .btn-primary { width: 100%; padding: 14px; border-radius: var(--r); border: none; background: var(--text); color: var(--bg); font-size: 15px; font-weight: 500; cursor: pointer; font-family: inherit; transition: opacity .15s; margin-bottom: .75rem; }
+    .btn-primary:hover { opacity: .82; }
+    .btn-primary:disabled { opacity: .35; cursor: default; }
+    .btn-secondary { width: 100%; padding: 12px; border-radius: var(--r); border: 1px solid var(--border2); background: transparent; font-size: 14px; font-weight: 500; color: var(--text2); cursor: pointer; font-family: inherit; transition: background .12s; margin-bottom: .75rem; display: block; text-align: center; text-decoration: none; }
+    .btn-secondary:hover { background: var(--bg2); }
+    .back-link { font-size: 13px; color: var(--text2); background: none; border: none; cursor: pointer; font-family: inherit; padding: 0; margin-bottom: 1.5rem; text-align: left; display: inline-block; }
+    .back-link:hover { color: var(--text); }
+
+    /* ── Progress ── */
     .progress { height: 2px; background: var(--bg3); border-radius: 2px; margin-bottom: 1.5rem; overflow: hidden; }
     .pf { height: 100%; background: var(--text); border-radius: 2px; transition: width .45s ease; }
     .dots { display: flex; gap: 8px; margin-bottom: 1.75rem; }
     .dot { width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border); background: var(--bg2); transition: background .2s; }
     .dot.ok { background: var(--green-bg); border-color: var(--green-bd); }
-    .dot.no { background: var(--red-bg); border-color: var(--red-bd); }
+    .dot.no { background: var(--red-bg);   border-color: var(--red-bd); }
+
+    /* ── Game ── */
     .cat { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--text3); margin-bottom: .5rem; }
     .qtext { font-size: 16px; line-height: 1.6; margin-bottom: 1.5rem; }
     .tcard { background: var(--bg2); border-radius: var(--rl); padding: 1.25rem 1.5rem; text-align: center; margin-bottom: 1.5rem; }
@@ -79,16 +100,11 @@
     .revnum { font-size: 28px; font-weight: 600; margin-bottom: .2rem; }
     .revsrc { font-size: 11.5px; color: var(--text3); }
     .qcount { font-size: 13px; color: var(--text2); }
-    .btn-primary { width: 100%; padding: 14px; border-radius: var(--r); border: none; background: var(--text); color: var(--bg); font-size: 15px; font-weight: 500; cursor: pointer; font-family: inherit; transition: opacity .15s; margin-bottom: .75rem; }
-    .btn-primary:hover { opacity: .82; }
-    .btn-primary:disabled { opacity: .35; cursor: default; }
-    .btn-secondary { width: 100%; padding: 12px; border-radius: var(--r); border: 1px solid var(--border2); background: transparent; font-size: 14px; font-weight: 500; color: var(--text2); cursor: pointer; font-family: inherit; transition: background .12s; margin-bottom: .75rem; }
-    .btn-secondary:hover { background: var(--bg2); }
     .nxtbtn { width: 100%; padding: 14px; border-radius: var(--r); border: none; background: var(--text); color: var(--bg); font-size: 15px; font-weight: 500; cursor: pointer; font-family: inherit; transition: opacity .15s; display: none; }
     .nxtbtn:hover { opacity: .82; }
     .nxtbtn.show { display: block; }
-    .user-chip { font-size: 12px; color: var(--text2); padding: 5px 11px; border-radius: 100px; border: 1px solid var(--border); background: transparent; cursor: pointer; font-family: inherit; transition: background .12s; white-space: nowrap; }
-    .user-chip:hover { background: var(--bg2); }
+
+    /* ── Intro ── */
     .intro-title { font-size: 36px; font-weight: 700; letter-spacing: -.03em; line-height: 1.1; margin-bottom: .5rem; }
     .intro-sub { font-size: 15px; color: var(--text2); line-height: 1.6; margin-bottom: 1.75rem; }
     .how { display: flex; gap: 12px; align-items: flex-start; margin-bottom: .9rem; }
@@ -100,6 +116,8 @@
     .already-card { background: var(--bg2); border-radius: var(--rl); padding: 1.25rem; text-align: center; margin-bottom: 1rem; border: 1px solid var(--border); }
     .already-score { font-size: 36px; font-weight: 700; margin-bottom: .3rem; }
     .already-msg { font-size: 13px; color: var(--text2); }
+
+    /* ── Results ── */
     .cscore { font-size: 68px; font-weight: 700; letter-spacing: -.04em; line-height: 1; margin-bottom: .25rem; }
     .cmsg { font-size: 15px; color: var(--text2); margin-bottom: .4rem; }
     .peer-msg { font-size: 13px; color: var(--text3); margin-bottom: 1.5rem; min-height: 18px; }
@@ -134,12 +152,12 @@
     .ritem { display: grid; grid-template-columns: 16px 1fr; gap: 10px; align-items: start; padding: .85rem 0; border-top: 1px solid var(--border); }
     .rico { width: 14px; height: 14px; border-radius: 50%; margin-top: 3px; flex-shrink: 0; }
     .rico.ok { background: var(--green-bg); outline: 2px solid var(--green-bd); }
-    .rico.no { background: var(--red-bg); outline: 2px solid var(--red-bd); }
+    .rico.no { background: var(--red-bg);   outline: 2px solid var(--red-bd); }
     .rq { font-size: 13px; color: var(--text2); margin-bottom: 4px; line-height: 1.4; }
     .ra { font-size: 14px; font-weight: 500; }
     .rsrc { font-weight: 400; color: var(--text3); }
-    .back-link { font-size: 13px; color: var(--text2); background: none; border: none; cursor: pointer; font-family: inherit; padding: 0; margin-bottom: 1.5rem; text-align: left; }
-    .back-link:hover { color: var(--text); }
+
+    /* ── Sign-in screen ── */
     .si-title { font-size: 26px; font-weight: 700; letter-spacing: -.02em; margin-bottom: .4rem; }
     .si-sub { font-size: 14px; color: var(--text2); line-height: 1.55; margin-bottom: 1.5rem; }
     .si-feat { display: flex; gap: 10px; align-items: flex-start; margin-bottom: .85rem; }
@@ -147,21 +165,69 @@
     .si-ftxt { font-size: 14px; color: var(--text2); line-height: 1.4; }
     .fi { margin-bottom: .9rem; }
     .fi label { display: block; font-size: 12px; color: var(--text2); margin-bottom: .3rem; }
-    .fi input { width: 100%; padding: 10px 12px; border-radius: var(--r); border: 1px solid var(--border2); background: var(--bg); font-size: 14px; font-family: inherit; color: var(--text); outline: none; }
-    .fi input:focus { border-color: var(--text2); }
+    .fi input, .fi select, .fi textarea { width: 100%; padding: 10px 12px; border-radius: var(--r); border: 1px solid var(--border2); background: var(--bg); font-size: 14px; font-family: inherit; color: var(--text); outline: none; appearance: none; }
+    .fi input:focus, .fi select:focus, .fi textarea:focus { border-color: var(--text2); }
+    .fi textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
+    .fi .hint { font-size: 11.5px; color: var(--text3); margin-top: .3rem; }
+    .fi-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: .85rem; }
+    .fi-row .fi { margin-bottom: 0; }
     .or-row { display: flex; align-items: center; gap: 10px; margin: 1rem 0; font-size: 12px; color: var(--text3); }
     .or-row::before, .or-row::after { content: ''; flex: 1; height: 1px; background: var(--border); }
     .si-note { font-size: 11.5px; color: var(--text3); text-align: center; margin-top: .85rem; line-height: 1.5; }
     .si-msg { font-size: 13px; border-radius: var(--r); padding: .75rem 1rem; margin-bottom: .85rem; display: none; }
     .si-msg.error   { color: var(--red-tx);   background: var(--red-bg); }
     .si-msg.success { color: var(--green-tx); background: var(--green-bg); }
+
+    /* ── Suggest screen ── */
+    .page-title { font-size: 28px; font-weight: 700; letter-spacing: -.025em; margin-bottom: .4rem; }
+    .page-sub { font-size: 15px; color: var(--text2); line-height: 1.6; margin-bottom: .35rem; }
+    .sunday-badge { display: inline-flex; align-items: center; gap: 6px; background: var(--amber-bg); color: var(--amber-tx); font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 100px; margin-bottom: 1.75rem; }
+    .sunday-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--amber-tx); }
+    .sug-section { margin-bottom: 1.75rem; }
+    .sug-section-title { font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--text3); margin-bottom: .85rem; }
+    .divider { height: 1px; background: var(--border); margin: 1.75rem 0; }
+    .status-msg { border-radius: var(--r); padding: 1rem 1.1rem; font-size: 14px; line-height: 1.5; margin-bottom: 1rem; display: none; }
+    .status-msg.error   { background: var(--red-bg);   color: var(--red-tx); }
+    .status-msg.success { background: var(--green-bg); color: var(--green-tx); }
+    .dir-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .dir-btn { padding: 10px 8px; border-radius: var(--r); border: 1px solid var(--border2); background: var(--bg); font-size: 14px; font-weight: 500; color: var(--text2); cursor: pointer; font-family: inherit; transition: all .12s; text-align: center; }
+    .dir-btn.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+    .dir-btn:hover:not(.active) { background: var(--bg2); }
+    .preview-wrap { margin-bottom: 1.75rem; }
+    .preview-label { font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--text3); margin-bottom: .75rem; }
+    .preview-card { background: var(--bg2); border-radius: var(--rl); padding: 1.25rem 1.5rem; border: 1px solid var(--border); }
+    .preview-cat { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--text3); margin-bottom: .4rem; }
+    .preview-q { font-size: 15px; line-height: 1.55; margin-bottom: 1rem; }
+    .preview-thr-label { font-size: 12px; color: var(--text2); margin-bottom: .3rem; text-align: center; }
+    .preview-thr { font-size: 36px; font-weight: 700; letter-spacing: -.025em; line-height: 1; margin-bottom: .85rem; text-align: center; }
+    .preview-ans-row { display: flex; justify-content: center; gap: 8px; }
+    .preview-ans-tag { font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: 100px; border: 1px solid var(--border2); color: var(--text2); background: var(--bg); }
+    .preview-ans-tag.correct { background: var(--green-bg); color: var(--green-tx); border-color: var(--green-bd); }
+    .past-sug-hdr { font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--text3); margin-bottom: .85rem; border-top: 1px solid var(--border); padding-top: 1.5rem; margin-top: 2rem; }
+    .sug-item { padding: .85rem 0; border-top: 1px solid var(--border); }
+    .sug-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: .3rem; }
+    .sug-q { font-size: 14px; color: var(--text); line-height: 1.4; flex: 1; }
+    .sug-badge { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 100px; white-space: nowrap; flex-shrink: 0; }
+    .sug-badge.pending  { background: var(--amber-bg); color: var(--amber-tx); }
+    .sug-badge.approved { background: var(--green-bg); color: var(--green-tx); }
+    .sug-badge.rejected { background: var(--red-bg);   color: var(--red-tx); }
+    .sug-meta { font-size: 12px; color: var(--text3); }
+    .sug-empty { font-size: 14px; color: var(--text3); padding: .75rem 0; }
+
+    /* ── Suggest button above review ── */
+    .suggest-cta { display: flex; align-items: center; justify-content: space-between; padding: .85rem 1rem; border-radius: var(--r); border: 1px solid var(--border2); margin-bottom: 1.25rem; cursor: pointer; transition: background .12s; }
+    .suggest-cta:hover { background: var(--bg2); }
+    .suggest-cta-left { font-size: 14px; font-weight: 500; }
+    .suggest-cta-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+    .suggest-cta-arrow { font-size: 16px; color: var(--text3); }
+
     @keyframes fadeUp { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
   </style>
 </head>
 <body>
 <div class="pg">
 
-  <!-- INTRO -->
+  <!-- ══ INTRO ════════════════════════════════════════ -->
   <div class="screen active" id="s-intro">
     <div class="hdr">
       <div class="logo">Pop<em>Guess</em></div>
@@ -187,7 +253,7 @@
     <div id="intro-bottom-btn"></div>
   </div>
 
-  <!-- GAME -->
+  <!-- ══ GAME ═════════════════════════════════════════ -->
   <div class="screen" id="s-game">
     <div class="hdr">
       <div class="logo">Pop<em>Guess</em></div>
@@ -216,7 +282,7 @@
     <button class="nxtbtn" id="nxtbtn">Next question →</button>
   </div>
 
-  <!-- RESULTS -->
+  <!-- ══ RESULTS ═══════════════════════════════════════ -->
   <div class="screen" id="s-done">
     <div class="hdr">
       <div class="logo">Pop<em>Guess</em></div>
@@ -238,20 +304,22 @@
     <div class="sharebox" id="sharebox"></div>
     <button class="copybtn" id="copybtn">Copy results</button>
     <div id="done-auth-cta"></div>
+    <!-- Suggest CTA — shown above review for signed-in users -->
+    <div id="done-suggest-cta"></div>
     <div class="rev-section">
       <div class="rev-hdr">Question review</div>
       <div id="review"></div>
     </div>
   </div>
 
-  <!-- SIGN IN -->
+  <!-- ══ SIGN IN ════════════════════════════════════════ -->
   <div class="screen" id="s-signin">
     <button class="back-link" id="si-back">← Back</button>
     <div class="si-title">Sign in to<br>PopGuess</div>
     <div class="si-sub">Save your streak and score history across all your devices.</div>
     <div class="si-feat"><div class="si-dot"></div><div class="si-ftxt">Streak synced — never lose your progress</div></div>
     <div class="si-feat"><div class="si-dot"></div><div class="si-ftxt">Full score history and distribution chart</div></div>
-    <div class="si-feat"><div class="si-dot"></div><div class="si-ftxt">Leaderboard with friends (coming soon)</div></div>
+    <div class="si-feat"><div class="si-dot"></div><div class="si-ftxt">Suggest questions for Community Sunday</div></div>
     <div style="height:1rem"></div>
     <div class="fi"><label>Email</label><input type="email" id="si-email" placeholder="you@example.com" /></div>
     <div class="fi"><label>Password</label><input type="password" id="si-pw" placeholder="••••••••" /></div>
@@ -262,13 +330,119 @@
     <div class="si-note">New here? Entering your email creates an account automatically.</div>
   </div>
 
+  <!-- ══ SUGGEST ════════════════════════════════════════ -->
+  <div class="screen" id="s-suggest">
+    <div class="hdr">
+      <div class="logo">Pop<em>Guess</em></div>
+      <div id="suggest-auth-el"></div>
+    </div>
+    <button class="back-link" id="sug-back">← Back</button>
+    <div class="page-title">Suggest a question</div>
+    <div class="page-sub">Got a surprising statistic? Submit it and it might be featured in a future game.</div>
+    <div class="sunday-badge"><div class="sunday-dot"></div>Community Sunday — suggested questions every week</div>
+
+    <div class="status-msg" id="sug-status"></div>
+
+    <div id="sug-success" style="display:none">
+      <div style="background:var(--green-bg);border-radius:var(--rl);padding:1.5rem;text-align:center;margin-bottom:1.5rem">
+        <div style="font-size:28px;margin-bottom:.5rem">✓</div>
+        <div style="font-size:16px;font-weight:600;color:var(--green-tx);margin-bottom:.3rem">Question submitted!</div>
+        <div style="font-size:13px;color:var(--green-tx);opacity:.8">We'll review it and may feature it on a Community Sunday.</div>
+      </div>
+      <button class="btn-primary" id="sug-another-btn">Submit another</button>
+    </div>
+
+    <div id="sug-form">
+      <div class="sug-section">
+        <div class="sug-section-title">The question</div>
+        <div class="fi">
+          <label>Category</label>
+          <select id="f-category">
+            <option value="">Select a category…</option>
+            <option>Animals</option><option>Culture</option><option>Earth</option>
+            <option>Economy</option><option>Food</option><option>History</option>
+            <option>Human Body</option><option>Nature</option><option>Society</option>
+            <option>Space</option><option>Technology</option><option>Other</option>
+          </select>
+        </div>
+        <div class="fi">
+          <label>Question</label>
+          <textarea id="f-question" placeholder="e.g. How many bones does an adult human have?"></textarea>
+          <div class="hint">Write it as a "how many" or "what percentage" question.</div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="sug-section">
+        <div class="sug-section-title">The numbers</div>
+        <div class="fi-row">
+          <div class="fi">
+            <label>Threshold (shown number)</label>
+            <input type="number" id="f-threshold" placeholder="e.g. 300" />
+          </div>
+          <div class="fi">
+            <label>Display label</label>
+            <input type="text" id="f-threshold-display" placeholder="e.g. 300 bones" />
+          </div>
+        </div>
+        <div class="fi">
+          <label>Is the real answer higher or lower?</label>
+          <div class="dir-toggle">
+            <button class="dir-btn" id="dir-higher" type="button">↑ Higher</button>
+            <button class="dir-btn" id="dir-lower"  type="button">↓ Lower</button>
+          </div>
+        </div>
+        <div class="fi-row">
+          <div class="fi">
+            <label>Actual answer (number)</label>
+            <input type="number" id="f-answer" placeholder="e.g. 206" />
+          </div>
+          <div class="fi">
+            <label>Display label</label>
+            <input type="text" id="f-answer-display" placeholder="e.g. 206 bones" />
+          </div>
+        </div>
+        <div class="fi">
+          <label>Source</label>
+          <input type="text" id="f-source" placeholder="e.g. Gray's Anatomy, 2023" />
+          <div class="hint">Include the publication or organisation name.</div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="preview-wrap">
+        <div class="preview-label">Preview</div>
+        <div class="preview-card">
+          <div class="preview-cat" id="prev-cat">Category</div>
+          <div class="preview-q" id="prev-q">Your question will appear here…</div>
+          <div class="preview-thr-label">Is the real answer higher or lower than</div>
+          <div class="preview-thr" id="prev-thr">—</div>
+          <div class="preview-ans-row">
+            <div class="preview-ans-tag" id="prev-higher">↑ Higher</div>
+            <div class="preview-ans-tag" id="prev-lower">↓ Lower</div>
+          </div>
+          <div style="margin-top:.85rem;font-size:12px;color:var(--text3);text-align:center" id="prev-answer"></div>
+        </div>
+      </div>
+
+      <button class="btn-primary" id="sug-submit-btn">Submit question</button>
+      <div style="font-size:11.5px;color:var(--text3);text-align:center">Please only submit real, verifiable statistics.</div>
+    </div>
+
+    <div id="sug-past" style="display:none">
+      <div class="past-sug-hdr">Your past submissions</div>
+      <div id="sug-list"></div>
+    </div>
+  </div>
+
 </div>
 <script>
 // ── CONFIG ───────────────────────────────────────────
 const SUPABASE_URL = 'https://sjwbcmnjzuxhnxesvdjr.supabase.co'
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNqd2JjbW5qenV4aG54ZXN2ZGpyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4ODQ1MTUsImV4cCI6MjA4OTQ2MDUxNX0.HFR3MRqg3xeaMJEPkCK7b_hhD8hkWFCsWAoipww_0jU'
 
-// ── SUPABASE CLIENT ──────────────────────────────────
 const { createClient } = supabase
 const db = createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: { detectSessionInUrl: true, autoRefreshToken: true, persistSession: true }
@@ -289,8 +463,10 @@ let ci          = 0
 let results     = []
 let guessed     = false
 let siFrom      = 'intro'
+let sugFrom     = 'intro'
 let currentUser = null
 let finalScore  = 0
+let sugDir      = null
 
 // ── DATE ─────────────────────────────────────────────
 function todayKey() {
@@ -305,11 +481,11 @@ function dayNum() {
 function show(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'))
   document.getElementById(id).classList.add('active')
+  window.scrollTo(0, 0)
 }
 
 // ── LOCAL STORAGE ─────────────────────────────────────
 function playedToday() { return localStorage.getItem('pg_last_played') === todayKey() }
-
 function getLocal() {
   return {
     streak:     parseInt(localStorage.getItem('pg_streak')     || '0'),
@@ -320,7 +496,6 @@ function getLocal() {
     lastPlayed: localStorage.getItem('pg_last_played')         || '',
   }
 }
-
 function saveLocal(score, answers) {
   const s    = getLocal()
   const yest = new Date(); yest.setDate(yest.getDate() - 1)
@@ -336,19 +511,17 @@ function saveLocal(score, answers) {
   localStorage.setItem('pg_last_ans',    JSON.stringify(answers))
   return streak
 }
-
 function saveProgress() {
   localStorage.setItem('pg_prog_date', todayKey())
-  localStorage.setItem('pg_prog_ci',   ci)
   localStorage.setItem('pg_prog_res',  JSON.stringify(results))
   localStorage.setItem('pg_prog_qs',   JSON.stringify(questions))
 }
 function clearProgress() {
-  ['pg_prog_date','pg_prog_ci','pg_prog_res','pg_prog_qs'].forEach(k => localStorage.removeItem(k))
+  ['pg_prog_date','pg_prog_res','pg_prog_qs'].forEach(k => localStorage.removeItem(k))
 }
 function hasProgress() {
   return localStorage.getItem('pg_prog_date') === todayKey()
-    && localStorage.getItem('pg_prog_ci') !== null
+    && localStorage.getItem('pg_prog_res') !== null
     && !playedToday()
 }
 
@@ -359,7 +532,6 @@ async function fetchQuestions() {
   if (error || !data || !data.length) { console.warn('Using fallback questions'); return FALLBACK }
   return data
 }
-
 async function savePlay(score, answers) {
   const row = { play_date: todayKey(), score, answers, user_id: currentUser?.id ?? null }
   if (currentUser) {
@@ -370,7 +542,6 @@ async function savePlay(score, answers) {
     if (error) console.error('saveAnonPlay:', error.message)
   }
 }
-
 async function fetchSupabaseStats() {
   if (!currentUser) return null
   const { data, error } = await db.from('plays').select('play_date,score')
@@ -386,7 +557,6 @@ async function fetchSupabaseStats() {
   const tot = data.reduce((s, p) => s + p.score, 0)
   return { dist, streak, plays: data.length, avg: data.length ? (tot/data.length).toFixed(1) : '—' }
 }
-
 async function fetchPeerPct(score) {
   const { data, error } = await db.rpc('get_score_distribution_today', { p_date: todayKey() })
   if (error || !data || !data.length) return null
@@ -403,62 +573,62 @@ function goSignIn(from) {
   msg.style.display = 'none'; msg.className = 'si-msg'
   show('s-signin')
 }
-
 function goBack() {
   show('s-' + siFrom)
-  if (siFrom === 'intro') renderIntro()
-  if (siFrom === 'done')  renderDoneAuth()
+  if (siFrom === 'intro')   renderIntro()
+  if (siFrom === 'done')    renderDoneAuth()
+  if (siFrom === 'suggest') renderSuggestAuth()
 }
-
 async function doSignIn() {
   const email = document.getElementById('si-email').value.trim()
   const pw    = document.getElementById('si-pw').value.trim()
   const btn   = document.getElementById('si-submit')
-
-  if (!email)      { showMsg('Please enter your email.', 'error'); return }
-  if (pw.length<6) { showMsg('Password must be at least 6 characters.', 'error'); return }
-
+  if (!email)      { showSiMsg('Please enter your email.', 'error'); return }
+  if (pw.length<6) { showSiMsg('Password must be at least 6 characters.', 'error'); return }
   btn.textContent = 'Signing in…'; btn.disabled = true
-
-  // Try sign in first
   const { error: siErr } = await db.auth.signInWithPassword({ email, password: pw })
-  if (!siErr) {
-    btn.textContent = 'Sign in / Create account'; btn.disabled = false
-    // onAuthStateChange fires SIGNED_IN and handles navigation
-    return
-  }
-
-  // Sign in failed — try creating account
+  if (!siErr) { btn.textContent = 'Sign in / Create account'; btn.disabled = false; return }
   const { data: suData, error: suErr } = await db.auth.signUp({ email, password: pw })
   btn.textContent = 'Sign in / Create account'; btn.disabled = false
-
   if (suErr) {
     const m = suErr.message.toLowerCase()
-    showMsg(m.includes('already') || m.includes('registered') ? 'Wrong password. Try again.' : suErr.message, 'error')
+    showSiMsg(m.includes('already') || m.includes('registered') ? 'Wrong password. Try again.' : suErr.message, 'error')
     return
   }
-  if (suData.user && !suData.session) {
-    showMsg('Account created! Check your email to confirm, then sign in.', 'success')
-  }
-  // If session exists onAuthStateChange fires SIGNED_IN and navigates
+  if (suData.user && !suData.session) showSiMsg('Account created! Check your email to confirm, then sign in.', 'success')
 }
-
 async function doGoogleSignIn() {
-  const { error } = await db.auth.signInWithOAuth({
-    provider: 'google',
-    options: { redirectTo: window.location.href }
-  })
-  if (error) showMsg(error.message, 'error')
+  const { error } = await db.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: window.location.href } })
+  if (error) showSiMsg(error.message, 'error')
 }
-
 async function doSignOut() {
   await db.auth.signOut()
-  // onAuthStateChange fires SIGNED_OUT → renderIntro() runs automatically
 }
-
-function showMsg(text, type) {
+function showSiMsg(text, type) {
   const el = document.getElementById('si-msg')
   el.textContent = text; el.className = `si-msg ${type}`; el.style.display = 'block'
+}
+
+// ── CLAIM LOCAL PLAY ──────────────────────────────────
+async function claimLocalPlay(user) {
+  if (!playedToday()) return
+  const lastScore = getLocal().lastScore
+  const lastAns   = JSON.parse(localStorage.getItem('pg_last_ans') || '[]')
+  if (!lastAns.length) return
+  const { data: existing } = await db.from('plays').select('id')
+    .eq('user_id', user.id).eq('play_date', todayKey()).limit(1).maybeSingle()
+  if (existing) return
+  const { data: anonRow } = await db.from('plays').select('id')
+    .is('user_id', null).eq('play_date', todayKey()).eq('score', lastScore).limit(1).maybeSingle()
+  if (anonRow) {
+    const { error } = await db.from('plays').update({ user_id: user.id }).eq('id', anonRow.id)
+    if (error) console.error('claimLocalPlay:', error.message)
+  } else {
+    await db.from('plays').upsert(
+      { user_id: user.id, play_date: todayKey(), score: lastScore, answers: lastAns },
+      { onConflict: 'user_id,play_date', ignoreDuplicates: true }
+    )
+  }
 }
 
 // ── RENDER: INTRO ─────────────────────────────────────
@@ -467,7 +637,6 @@ async function renderIntro() {
   document.getElementById('day-date-lbl').textContent = `5 questions · ${today}`
   document.getElementById('day-game-lbl').textContent = `Today's game · #${dayNum()}`
 
-  // Rebuild auth chip (always fresh — no stale listeners)
   const authEl = document.getElementById('intro-auth-el')
   authEl.innerHTML = ''
   if (currentUser) {
@@ -478,7 +647,6 @@ async function renderIntro() {
     authEl.appendChild(chip)
   }
 
-  // Check played state — remote check for signed-in users
   let played = playedToday(), lastScore = getLocal().lastScore
   if (currentUser && !played) {
     const { data } = await db.from('plays').select('score,answers')
@@ -491,66 +659,49 @@ async function renderIntro() {
     }
   }
 
-  // Already-played card
-  const alreadyWrap = document.getElementById('already-wrap')
-  alreadyWrap.style.display = played ? 'block' : 'none'
-  if (played) {
-    document.getElementById('already-score-lbl').textContent = `${lastScore}/5`
-  }
+  document.getElementById('already-wrap').style.display = played ? 'block' : 'none'
+  if (played) document.getElementById('already-score-lbl').textContent = `${lastScore}/5`
 
-  // Clone play button to wipe old listeners
   const oldBtn = document.getElementById('play-btn')
   const newBtn = oldBtn.cloneNode(true)
   oldBtn.parentNode.replaceChild(newBtn, oldBtn)
 
   if (played) {
-    newBtn.textContent = 'Come back tomorrow'
-    newBtn.disabled    = true
+    newBtn.textContent = 'Come back tomorrow'; newBtn.disabled = true
   } else if (hasProgress()) {
-    newBtn.textContent = 'Resume puzzle'
-    newBtn.disabled    = false
+    newBtn.textContent = 'Resume puzzle'; newBtn.disabled = false
     newBtn.addEventListener('click', resumeGame)
   } else {
-    newBtn.textContent = "Play today's game"
-    newBtn.disabled    = false
+    newBtn.textContent = "Play today's game"; newBtn.disabled = false
     newBtn.addEventListener('click', startGame)
   }
 
-  // Rebuild bottom button area — always fresh
-  // Signed in:  played → "View my stats"   |  not played → "Suggest a question"
-  // Signed out: always → "Sign in to sync your streak"
-  const bottomEl = document.getElementById('intro-bottom-btn')
-  bottomEl.innerHTML = ''
-
+  // Bottom button area — rebuilt fresh every time
+  const bot = document.getElementById('intro-bottom-btn')
+  bot.innerHTML = ''
   if (currentUser) {
     if (played) {
-      // Show stats button
       const statsBtn = document.createElement('button')
       statsBtn.className = 'btn-secondary'
       statsBtn.textContent = 'View my stats'
       statsBtn.addEventListener('click', showStats)
-      bottomEl.appendChild(statsBtn)
+      bot.appendChild(statsBtn)
     }
-    // Always show suggest button for signed-in users
-    const sugBtn = document.createElement('a')
-    sugBtn.href = 'suggest.html'
+    const sugBtn = document.createElement('button')
     sugBtn.className = 'btn-secondary'
     sugBtn.textContent = 'Suggest a question →'
-    sugBtn.style.display = 'block'
-    sugBtn.style.textAlign = 'center'
-    sugBtn.style.textDecoration = 'none'
-    bottomEl.appendChild(sugBtn)
+    sugBtn.addEventListener('click', () => goSuggest('intro'))
+    bot.appendChild(sugBtn)
   } else {
-    // Guest — show sign in button
     const siBtn = document.createElement('button')
     siBtn.className = 'btn-secondary'
     siBtn.textContent = 'Sign in to sync your streak'
     siBtn.addEventListener('click', () => goSignIn('intro'))
-    bottomEl.appendChild(siBtn)
+    bot.appendChild(siBtn)
   }
 }
 
-// ── RENDER: DONE SCREEN AUTH ──────────────────────────
+// ── RENDER: DONE AUTH ─────────────────────────────────
 function renderDoneAuth() {
   const topEl = document.getElementById('done-auth-el')
   topEl.innerHTML = ''
@@ -568,17 +719,25 @@ function renderDoneAuth() {
     ctaEl.innerHTML = `<div class="signin-cta" id="done-si-cta"><div class="cta-ico">↗</div><div style="flex:1"><div class="cta-title">Sign in to sync your stats</div><div class="cta-sub">Keep your streak and history across devices</div></div></div>`
     document.getElementById('done-si-cta').addEventListener('click', () => goSignIn('done'))
   }
+  // Suggest CTA above review — signed-in users only
+  const sugEl = document.getElementById('done-suggest-cta')
+  sugEl.innerHTML = ''
+  if (currentUser) {
+    const cta = document.createElement('div')
+    cta.className = 'suggest-cta'
+    cta.innerHTML = `<div><div class="suggest-cta-left">Suggest a question</div><div class="suggest-cta-sub">Submit a stat for Community Sunday</div></div><div class="suggest-cta-arrow">→</div>`
+    cta.addEventListener('click', () => goSuggest('done'))
+    sugEl.appendChild(cta)
+  }
 }
 
-// ── RENDER: DISTRIBUTION CHART ────────────────────────
+// ── RENDER: DIST ──────────────────────────────────────
 function renderDist(dist, curr) {
   const max = Math.max(...dist, 1)
   document.getElementById('dist-chart').innerHTML = dist.map((v, i) => `
     <div class="dist-row">
       <div class="dist-label">${i}</div>
-      <div class="dist-bar-wrap">
-        <div class="dist-bar${i===curr?' curr':''}" style="width:${v ? Math.max(Math.round(v/max*100), 5) : 0}%"></div>
-      </div>
+      <div class="dist-bar-wrap"><div class="dist-bar${i===curr?' curr':''}" style="width:${v?Math.max(Math.round(v/max*100),5):0}%"></div></div>
       <div class="dist-count">${v}</div>
     </div>`).join('')
 }
@@ -596,53 +755,36 @@ async function renderResults(score, answers, stats) {
     'Perfect score! You know your numbers.'
   ][score]
   document.getElementById('peer-msg').textContent = ''
-
   fetchPeerPct(score).then(r => {
     if (r) document.getElementById('peer-msg').textContent =
       `${r.pct}% of ${r.total.toLocaleString()} player${r.total===1?'':'s'} scored ${score}/5 today`
   })
-
   document.getElementById('streak-num').textContent = stats.streak
   document.getElementById('played-num').textContent = stats.plays
   document.getElementById('avg-num').textContent    = stats.avg
   renderDist(stats.dist, score)
-
   const eg = document.getElementById('egrid'); eg.innerHTML = ''
-  answers.forEach(r => {
-    const b = document.createElement('div')
-    b.className = 'eblock ' + (r ? 'ok' : 'no'); eg.appendChild(b)
-  })
-
-  const emo = answers.map(r => r ? '🟩' : '🟥').join('')
+  answers.forEach(r => { const b=document.createElement('div'); b.className='eblock '+(r?'ok':'no'); eg.appendChild(b) })
+  const emo = answers.map(r => r?'🟩':'🟥').join('')
   document.getElementById('sharebox').textContent =
     `PopGuess #${dayNum()}\n${score}/5  🔥 ${stats.streak}-day streak\n\n${emo}\n\nhttps://samtross10.github.io/popGuess/`
-
   renderDoneAuth()
 }
 
-// ── RENDER: QUESTION REVIEW ───────────────────────────
+// ── RENDER: REVIEW ────────────────────────────────────
 async function renderReview(answers) {
   const rv = document.getElementById('review'); rv.innerHTML = ''
-  let qs = questions
-
-  if (!qs || !qs.length) {
+  let qs = questions.length ? questions : null
+  if (!qs) {
     const { data } = await db.from('questions').select('*')
       .eq('play_date', todayKey()).order('sort_order', { ascending: true })
     qs = data || []
   }
-
-  if (!qs.length) {
-    rv.innerHTML = '<div style="font-size:13px;color:var(--text2);padding:.5rem 0">Question review unavailable.</div>'
-    return
-  }
-  if (!answers.length) {
-    rv.innerHTML = '<div style="font-size:13px;color:var(--text2);padding:.5rem 0">Play a game first to see your review.</div>'
-    return
-  }
-
+  if (!qs.length) { rv.innerHTML = '<div style="font-size:13px;color:var(--text2);padding:.5rem 0">Question review unavailable.</div>'; return }
+  if (!answers.length) { rv.innerHTML = '<div style="font-size:13px;color:var(--text2);padding:.5rem 0">Play a game first to see your review.</div>'; return }
   qs.forEach((q, i) => {
-    const ok = answers[i]; const d = document.createElement('div'); d.className = 'ritem'
-    d.innerHTML = `<div class="rico ${ok?'ok':'no'}"></div><div><div class="rq">${q.question}</div><div class="ra">${q.answer_display} <span class="rsrc">(${q.source})</span></div></div>`
+    const ok=answers[i], d=document.createElement('div'); d.className='ritem'
+    d.innerHTML=`<div class="rico ${ok?'ok':'no'}"></div><div><div class="rq">${q.question}</div><div class="ra">${q.answer_display} <span class="rsrc">(${q.source})</span></div></div>`
     rv.appendChild(d)
   })
 }
@@ -654,114 +796,222 @@ async function startGame() {
   questions = await fetchQuestions()
   loadQ(0); show('s-game')
 }
-
 async function resumeGame() {
   const savedQs = JSON.parse(localStorage.getItem('pg_prog_qs') || '[]')
   questions = savedQs.length ? savedQs : await fetchQuestions()
   results   = JSON.parse(localStorage.getItem('pg_prog_res') || '[]')
-  ci        = parseInt(localStorage.getItem('pg_prog_ci') || '0')
+  ci        = results.length
   guessed   = false
   for (let i=0; i<5; i++) document.getElementById(`d${i}`).className = 'dot'
-  results.forEach((ok, i) => document.getElementById(`d${i}`).classList.add(ok ? 'ok' : 'no'))
+  results.forEach((ok, i) => document.getElementById(`d${i}`).classList.add(ok?'ok':'no'))
   loadQ(ci)
   document.getElementById('pfill').style.width = `${(ci/5)*100}%`
   show('s-game')
 }
-
 function loadQ(i) {
-  const q = questions[i]; guessed = false
+  const q=questions[i]; guessed=false
   document.getElementById('qcnt').textContent  = `${i+1} / 5`
   document.getElementById('qcat').textContent  = q.category
   document.getElementById('qtext').textContent = q.question
   document.getElementById('qthr').textContent  = q.threshold_display
   document.getElementById('pfill').style.width = `${(i/5)*100}%`
-  const bh = document.getElementById('bhi'), bl = document.getElementById('blo')
+  const bh=document.getElementById('bhi'), bl=document.getElementById('blo')
   bh.className='gbtn'; bl.className='gbtn'; bh.disabled=false; bl.disabled=false
   document.getElementById('rev').classList.remove('show')
   document.getElementById('nxtbtn').classList.remove('show')
 }
-
 function guess(dir) {
-  if (guessed) return; guessed = true
-  const q = questions[ci], ok = dir === q.direction
-  results.push(ok)
+  if (guessed) return; guessed=true
+  const q=questions[ci], ok=dir===q.direction; results.push(ok)
   const bh=document.getElementById('bhi'), bl=document.getElementById('blo')
   const chosen=dir==='higher'?bh:bl, other=dir==='higher'?bl:bh, correct=q.direction==='higher'?bh:bl
   chosen.disabled=true; other.disabled=true
   if (ok) { chosen.classList.add('ok'); other.classList.add('dim') }
   else    { chosen.classList.add('no'); correct.classList.add('ok'); other.classList.add('dim') }
-  document.getElementById(`d${ci}`).classList.add(ok ? 'ok' : 'no')
+  document.getElementById(`d${ci}`).classList.add(ok?'ok':'no')
   document.getElementById('revnum').textContent = q.answer_display
-  document.getElementById('revsrc').textContent = 'Source: ' + q.source
+  document.getElementById('revsrc').textContent = 'Source: '+q.source
   document.getElementById('rev').classList.add('show')
-  const nb = document.getElementById('nxtbtn')
-  nb.textContent = ci < 4 ? 'Next question →' : 'See my results →'
+  const nb=document.getElementById('nxtbtn')
+  nb.textContent = ci<4 ? 'Next question →' : 'See my results →'
   nb.classList.add('show')
   saveProgress()
 }
-
 function nextQ() {
-  if (ci < 4) { ci++; loadQ(ci); saveProgress() }
-  else        { clearProgress(); done() }
+  if (ci<4) { ci++; loadQ(ci); saveProgress() }
+  else      { clearProgress(); done() }
 }
 
+// ── RESULTS ───────────────────────────────────────────
 async function done() {
   finalScore = results.filter(Boolean).length
   const localStreak = saveLocal(finalScore, results)
   await savePlay(finalScore, results)
-
   let stats = await fetchSupabaseStats()
   if (!stats) {
     const s = getLocal()
-    stats = { streak:localStreak, plays:s.plays, dist:s.dist,
-              avg: s.plays ? (s.totalScore/s.plays).toFixed(1) : finalScore.toFixed(1) }
+    stats = { streak:localStreak, plays:s.plays, dist:s.dist, avg:s.plays?(s.totalScore/s.plays).toFixed(1):finalScore.toFixed(1) }
   } else {
-    // Guard: Supabase may not have committed the new row yet
     stats.streak = Math.max(stats.streak, localStreak)
     stats.plays  = Math.max(stats.plays, 1)
   }
-
   await renderResults(finalScore, results, stats)
   await renderReview(results)
+  // Add back button once
+  const hdr = document.querySelector('#s-done .hdr')
+  if (!hdr.querySelector('.back-to-home')) {
+    const btn=document.createElement('button'); btn.className='user-chip back-to-home'; btn.textContent='← Home'
+    btn.addEventListener('click', () => { show('s-intro'); renderIntro() }); hdr.appendChild(btn)
+  }
   show('s-done')
 }
 
 async function showStats() {
   let stats = await fetchSupabaseStats()
   if (!stats) {
-    const s = getLocal()
-    stats = { streak:s.streak, plays:s.plays, dist:s.dist, avg:s.plays ? (s.totalScore/s.plays).toFixed(1) : '—' }
+    const s=getLocal()
+    stats = { streak:s.streak, plays:s.plays, dist:s.dist, avg:s.plays?(s.totalScore/s.plays).toFixed(1):'—' }
   }
-
   const lastScore = getLocal().lastScore
-  const lastAns   = JSON.parse(localStorage.getItem('pg_last_ans') || '[]')
-
+  const lastAns   = JSON.parse(localStorage.getItem('pg_last_ans')||'[]')
   await renderResults(lastScore, lastAns, stats)
   document.getElementById('cmsg').textContent = 'Come back tomorrow for the next game.'
-
   await renderReview(lastAns)
-
   // Add back button once
   const hdr = document.querySelector('#s-done .hdr')
   if (!hdr.querySelector('.back-to-home')) {
-    const btn = document.createElement('button')
-    btn.className = 'user-chip back-to-home'; btn.textContent = '← Home'
-    btn.addEventListener('click', () => { show('s-intro'); renderIntro() })
-    hdr.appendChild(btn)
+    const btn=document.createElement('button'); btn.className='user-chip back-to-home'; btn.textContent='← Home'
+    btn.addEventListener('click', () => { show('s-intro'); renderIntro() }); hdr.appendChild(btn)
   }
-
   show('s-done')
 }
 
 function doCopy() {
   navigator.clipboard.writeText(document.getElementById('sharebox').textContent).then(() => {
-    const b = document.getElementById('copybtn'); b.textContent = 'Copied!'
-    setTimeout(() => b.textContent = 'Copy results', 2000)
+    const b=document.getElementById('copybtn'); b.textContent='Copied!'
+    setTimeout(()=>b.textContent='Copy results',2000)
   })
 }
 
-// ── STATIC BUTTON WIRING (once, on page load) ─────────
-// Note: intro bottom buttons (sign-in, stats, suggest) are wired inside renderIntro()
+// ── SUGGEST SCREEN ────────────────────────────────────
+function goSuggest(from) {
+  sugFrom = from
+  resetSugForm()
+  renderSuggestAuth()
+  loadPastSuggestions()
+  show('s-suggest')
+}
+
+function renderSuggestAuth() {
+  const el = document.getElementById('suggest-auth-el')
+  el.innerHTML = ''
+  if (currentUser) {
+    const chip = document.createElement('button')
+    chip.className = 'user-chip'
+    chip.textContent = `${currentUser.email.split('@')[0]} · Sign out`
+    chip.addEventListener('click', doSignOut)
+    el.appendChild(chip)
+  }
+}
+
+function setSugDir(dir) {
+  sugDir = dir
+  document.getElementById('dir-higher').classList.toggle('active', dir==='higher')
+  document.getElementById('dir-lower').classList.toggle('active',  dir==='lower')
+  updatePreview()
+}
+
+const previewFields = ['f-category','f-question','f-threshold-display','f-answer-display']
+previewFields.forEach(id => {
+  const el = document.getElementById(id)
+  if (el) el.addEventListener('input', updatePreview)
+})
+
+function updatePreview() {
+  const cat  = document.getElementById('f-category').value
+  const q    = document.getElementById('f-question').value.trim()
+  const thrD = document.getElementById('f-threshold-display').value.trim()
+  const ansD = document.getElementById('f-answer-display').value.trim()
+  document.getElementById('prev-cat').textContent = cat  || 'Category'
+  document.getElementById('prev-q').textContent   = q    || 'Your question will appear here…'
+  document.getElementById('prev-thr').textContent = thrD || '—'
+  document.getElementById('prev-higher').className = 'preview-ans-tag' + (sugDir==='higher'?' correct':'')
+  document.getElementById('prev-lower').className  = 'preview-ans-tag' + (sugDir==='lower'?' correct':'')
+  document.getElementById('prev-answer').textContent = ansD ? `Real answer: ${ansD}` : ''
+}
+
+async function submitSuggestion() {
+  const category          = document.getElementById('f-category').value
+  const question          = document.getElementById('f-question').value.trim()
+  const threshold         = parseFloat(document.getElementById('f-threshold').value)
+  const threshold_display = document.getElementById('f-threshold-display').value.trim()
+  const answer            = parseFloat(document.getElementById('f-answer').value)
+  const answer_display    = document.getElementById('f-answer-display').value.trim()
+  const source            = document.getElementById('f-source').value.trim()
+  const btn               = document.getElementById('sug-submit-btn')
+
+  if (!category)          { showSugStatus('Please select a category.', 'error'); return }
+  if (!question)          { showSugStatus('Please enter your question.', 'error'); return }
+  if (isNaN(threshold))   { showSugStatus('Please enter the threshold number.', 'error'); return }
+  if (!threshold_display) { showSugStatus('Please enter the threshold display label.', 'error'); return }
+  if (!sugDir)            { showSugStatus('Please select higher or lower.', 'error'); return }
+  if (isNaN(answer))      { showSugStatus('Please enter the actual answer.', 'error'); return }
+  if (!answer_display)    { showSugStatus('Please enter the answer display label.', 'error'); return }
+  if (!source)            { showSugStatus('Please enter a source.', 'error'); return }
+
+  btn.textContent='Submitting…'; btn.disabled=true
+
+  const { error } = await db.from('suggestions').insert({
+    category, question, threshold, threshold_display,
+    answer, answer_display, source, direction: sugDir,
+    user_id: currentUser?.id ?? null,
+    email:   currentUser?.email ?? null,
+  })
+
+  btn.textContent='Submit question'; btn.disabled=false
+
+  if (error) { showSugStatus('Something went wrong. Please try again.', 'error'); console.error(error); return }
+
+  document.getElementById('sug-form').style.display    = 'none'
+  document.getElementById('sug-success').style.display = 'block'
+  loadPastSuggestions()
+}
+
+function resetSugForm() {
+  ['f-category','f-question','f-threshold','f-threshold-display','f-answer','f-answer-display','f-source']
+    .forEach(id => { const el=document.getElementById(id); if(el) el.value='' })
+  sugDir = null
+  document.getElementById('dir-higher').classList.remove('active')
+  document.getElementById('dir-lower').classList.remove('active')
+  document.getElementById('sug-form').style.display    = 'block'
+  document.getElementById('sug-success').style.display = 'none'
+  document.getElementById('sug-status').style.display  = 'none'
+  updatePreview()
+}
+
+function showSugStatus(text, type) {
+  const el = document.getElementById('sug-status')
+  el.textContent=text; el.className=`status-msg ${type}`; el.style.display='block'
+  setTimeout(()=>el.style.display='none', 5000)
+}
+
+async function loadPastSuggestions() {
+  if (!currentUser) return
+  const { data } = await db.from('suggestions').select('question,status,created_at,category')
+    .eq('user_id', currentUser.id).order('created_at', { ascending: false }).limit(10)
+  if (!data) return
+  const wrap=document.getElementById('sug-past'), list=document.getElementById('sug-list')
+  list.innerHTML=''
+  wrap.style.display = data.length ? 'block' : 'none'
+  data.forEach(s => {
+    const date=new Date(s.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})
+    const d=document.createElement('div'); d.className='sug-item'
+    d.innerHTML=`<div class="sug-top"><div class="sug-q">${s.question}</div><div class="sug-badge ${s.status}">${s.status}</div></div><div class="sug-meta">${s.category} · Submitted ${date}</div>`
+    list.appendChild(d)
+  })
+}
+
+// ── STATIC BUTTON WIRING ──────────────────────────────
 document.getElementById('si-back').addEventListener('click',        goBack)
 document.getElementById('si-submit').addEventListener('click',      doSignIn)
 document.getElementById('si-google').addEventListener('click',      doGoogleSignIn)
@@ -769,49 +1019,23 @@ document.getElementById('bhi').addEventListener('click',            () => guess(
 document.getElementById('blo').addEventListener('click',            () => guess('lower'))
 document.getElementById('nxtbtn').addEventListener('click',         nextQ)
 document.getElementById('copybtn').addEventListener('click',        doCopy)
-
-// ── CLAIM LOCAL PLAY ON SIGN-IN ──────────────────────
-// If the user played as a guest today then signed in,
-// this attaches that play to their account.
-async function claimLocalPlay(user) {
-  // Only if they actually played today locally
-  if (!playedToday()) return
-
-  const lastScore = getLocal().lastScore
-  const lastAns   = JSON.parse(localStorage.getItem('pg_last_ans') || '[]')
-  if (!lastAns.length) return
-
-  // Check if they already have a row in Supabase for today
-  const { data: existing } = await db.from('plays')
-    .select('id')
-    .eq('user_id', user.id)
-    .eq('play_date', todayKey())
-    .limit(1)
-    .maybeSingle()
-
-  // Already saved — nothing to do
-  if (existing) return
-
-  // Upsert the local play under their account
-  const { error } = await db.from('plays').upsert(
-    { user_id: user.id, play_date: todayKey(), score: lastScore, answers: lastAns },
-    { onConflict: 'user_id,play_date', ignoreDuplicates: true }
-  )
-  if (error) console.error('claimLocalPlay:', error.message)
-  else console.log('Local play claimed to account:', user.email)
-}
+document.getElementById('dir-higher').addEventListener('click',     () => setSugDir('higher'))
+document.getElementById('dir-lower').addEventListener('click',      () => setSugDir('lower'))
+document.getElementById('sug-submit-btn').addEventListener('click', submitSuggestion)
+document.getElementById('sug-another-btn').addEventListener('click', () => resetSugForm())
+document.getElementById('sug-back').addEventListener('click', () => {
+  show('s-' + sugFrom)
+  if (sugFrom === 'intro') renderIntro()
+  if (sugFrom === 'done')  renderDoneAuth()
+})
 
 // ── BOOT ──────────────────────────────────────────────
 function boot() {
-  // Single auth listener — the only place currentUser is set
-  // INITIAL_SESSION fires on every page load (signed in or not)
-  // SIGNED_IN fires after email login or Google OAuth redirect
-  // SIGNED_OUT fires after doSignOut()
   db.auth.onAuthStateChange(async (event, session) => {
     console.log('auth:', event, session?.user?.email ?? 'none')
     currentUser = session?.user ?? null
 
-    // Clean OAuth hash AFTER Supabase has already read it from the URL
+    // Clean OAuth hash AFTER Supabase has already read it
     if (window.location.hash.includes('access_token')) {
       window.history.replaceState({}, document.title, window.location.pathname)
     }
@@ -819,15 +1043,12 @@ function boot() {
     await renderIntro()
 
     if (event === 'SIGNED_IN') {
-      // Claim any locally completed play from today into the account
       if (currentUser) await claimLocalPlay(currentUser)
-
-      if (document.getElementById('s-signin').classList.contains('active')) {
-        goBack()
-      }
+      if (document.getElementById('s-signin').classList.contains('active')) goBack()
     }
-    if (event === 'SIGNED_OUT' && document.getElementById('s-done').classList.contains('active')) {
-      renderDoneAuth()
+    if (event === 'SIGNED_OUT') {
+      if (document.getElementById('s-done').classList.contains('active'))    renderDoneAuth()
+      if (document.getElementById('s-suggest').classList.contains('active')) renderSuggestAuth()
     }
   })
 }
