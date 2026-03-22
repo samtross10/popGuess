@@ -347,7 +347,7 @@
     <button class="back-link" id="sug-back">← Back</button>
     <div class="page-title">Suggest a question</div>
     <div class="page-sub">Got a surprising statistic? Submit it and it might be featured in a future game.</div>
-    <div class="sunday-badge"><div class="sunday-dot"></div>Community Sunday: Every sunday, a random pool of 5 player suggested questions will be featured in a game!</div>
+    <div class="sunday-badge"><div class="sunday-dot"></div>Community Sunday: Every Sunday, a pool of 5 random submitted quesions will be featured in a game!</div>
 
     <div class="status-msg" id="sug-status"></div>
 
@@ -355,7 +355,7 @@
       <div style="background:var(--green-bg);border-radius:var(--rl);padding:1.5rem;text-align:center;margin-bottom:1.5rem">
         <div style="font-size:28px;margin-bottom:.5rem">✓</div>
         <div style="font-size:16px;font-weight:600;color:var(--green-tx);margin-bottom:.3rem">Question submitted!</div>
-        <div style="font-size:13px;color:var(--green-tx);opacity:.8">Your question will be reviewed and it may be featured on a future Community Sunday.</div>
+        <div style="font-size:13px;color:var(--green-tx);opacity:.8">Your question will be reviewed and it and may be featured on a future Community Sunday.</div>
       </div>
       <button class="btn-primary" id="sug-another-btn">Submit another</button>
     </div>
@@ -1074,23 +1074,26 @@ document.getElementById('sug-back').addEventListener('click', () => {
 })
 
 // ── BOOT ──────────────────────────────────────────────
-function boot() {
+async function boot() {
+  // Clean OAuth hash before anything else
+  if (window.location.hash.includes('access_token')) {
+    window.history.replaceState({}, document.title, window.location.pathname)
+  }
+
+  // Get session once — no waiting on events, no double renders
+  const { data: { session } } = await db.auth.getSession()
+  currentUser = session?.user ?? null
+
+  // Render exactly once with correct auth state
+  await renderIntro()
+
+  // Now listen for future auth changes only
   db.auth.onAuthStateChange(async (event, session) => {
     console.log('auth:', event, session?.user?.email ?? 'none')
 
-    // Clean OAuth hash AFTER Supabase has already read it
-    if (window.location.hash.includes('access_token')) {
-      window.history.replaceState({}, document.title, window.location.pathname)
-    }
-
-    // TOKEN_REFRESHED fires silently every hour — it doesn't change
-    // who is logged in so we must NOT re-render or clone buttons.
-    // Only act on events that actually change auth state.
     if (event === 'TOKEN_REFRESHED') return
 
     currentUser = session?.user ?? null
-
-    // Always re-render intro so chips and play button are correct
     await renderIntro()
 
     if (event === 'SIGNED_IN') {
