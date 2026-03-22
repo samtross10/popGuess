@@ -250,7 +250,10 @@
     <button class="back-link" id="si-back">← Back</button>
     <div class="si-title">Sign in to<br>PopGuess</div>
     <div class="si-sub">Save your streak and score history across all your devices.</div>
-
+    <div class="si-feat"><div class="si-dot"></div><div class="si-ftxt">Streak synced — never lose your progress</div></div>
+    <div class="si-feat"><div class="si-dot"></div><div class="si-ftxt">Full score history and distribution chart</div></div>
+    <div class="si-feat"><div class="si-dot"></div><div class="si-ftxt">Leaderboard with friends (coming soon)</div></div>
+    <div style="height:1rem"></div>
     <div class="fi"><label>Email</label><input type="email" id="si-email" placeholder="you@example.com" /></div>
     <div class="fi"><label>Password</label><input type="password" id="si-pw" placeholder="••••••••" /></div>
     <div class="si-msg" id="si-msg"></div>
@@ -337,14 +340,13 @@ function saveLocal(score, answers) {
 
 function saveProgress() {
   localStorage.setItem('pg_prog_date', todayKey())
+  localStorage.setItem('pg_prog_ci',   ci)
   localStorage.setItem('pg_prog_res',  JSON.stringify(results))
   localStorage.setItem('pg_prog_qs',   JSON.stringify(questions))
 }
-
 function clearProgress() {
-  ['pg_prog_date','pg_prog_res','pg_prog_qs'].forEach(k => localStorage.removeItem(k))
+  ['pg_prog_date','pg_prog_ci','pg_prog_res','pg_prog_qs'].forEach(k => localStorage.removeItem(k))
 }
-
 function hasProgress() {
   return localStorage.getItem('pg_prog_date') === todayKey()
     && localStorage.getItem('pg_prog_ci') !== null
@@ -450,9 +452,9 @@ async function doGoogleSignIn() {
   if (error) showMsg(error.message, 'error')
 }
 
-async function signOut() {
+async function doSignOut() {
   await db.auth.signOut()
-  // onAuthStateChange fires SIGNED_OUT automatically — don't call initIntro() here
+  // onAuthStateChange fires SIGNED_OUT → renderIntro() runs automatically
 }
 
 function showMsg(text, type) {
@@ -625,7 +627,7 @@ async function resumeGame() {
   const savedQs = JSON.parse(localStorage.getItem('pg_prog_qs') || '[]')
   questions = savedQs.length ? savedQs : await fetchQuestions()
   results   = JSON.parse(localStorage.getItem('pg_prog_res') || '[]')
-  ci        = results.length
+  ci        = parseInt(localStorage.getItem('pg_prog_ci') || '0')
   guessed   = false
   for (let i=0; i<5; i++) document.getElementById(`d${i}`).className = 'dot'
   results.forEach((ok, i) => document.getElementById(`d${i}`).classList.add(ok ? 'ok' : 'no'))
@@ -735,26 +737,23 @@ document.getElementById('copybtn').addEventListener('click',        doCopy)
 
 // ── BOOT ──────────────────────────────────────────────
 function boot() {
-  // onAuthStateChange is the ONLY driver of UI updates.
-  // INITIAL_SESSION fires on every page load — signed in or not —
-  // so initIntro() always runs exactly once at startup.
+  // Clean up OAuth hash immediately
+  if (window.location.hash.includes('access_token')) {
+    window.history.replaceState({}, document.title, window.location.pathname)
+  }
+
+  // Single auth listener — the only place currentUser is set
+  // INITIAL_SESSION fires on every page load (signed in or not)
+  // SIGNED_IN fires after email login or Google OAuth redirect
+  // SIGNED_OUT fires after doSignOut()
   db.auth.onAuthStateChange(async (event, session) => {
     console.log('auth:', event, session?.user?.email ?? 'none')
     currentUser = session?.user ?? null
+    await renderIntro()
 
-    // Clean OAuth hash only after Supabase has already read it
-    if (window.location.hash.includes('access_token')) {
-      window.history.replaceState({}, document.title, window.location.pathname)
-    }
-
-    await initIntro()
-
-    // After Google sign-in, navigate back from the sign-in screen
     if (event === 'SIGNED_IN' && document.getElementById('s-signin').classList.contains('active')) {
       goBack()
     }
-
-    // If signed out while on results screen, update auth area there too
     if (event === 'SIGNED_OUT' && document.getElementById('s-done').classList.contains('active')) {
       renderDoneAuth()
     }
