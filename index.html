@@ -181,6 +181,8 @@
     /* ── Suggest screen ── */
     .page-title { font-size: 28px; font-weight: 700; letter-spacing: -.025em; margin-bottom: .4rem; }
     .page-sub { font-size: 15px; color: var(--text2); line-height: 1.6; margin-bottom: .35rem; }
+    .sunday-badge { display: inline-flex; align-items: center; gap: 6px; background: var(--amber-bg); color: var(--amber-tx); font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 100px; margin-bottom: 1.75rem; }
+    .sunday-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--amber-tx); }
     .sug-section { margin-bottom: 1.75rem; }
     .sug-section-title { font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--text3); margin-bottom: .85rem; }
     .divider { height: 1px; background: var(--border); margin: 1.75rem 0; }
@@ -237,7 +239,7 @@
     <div class="how"><div class="hnum">2</div><div class="htxt">Guess higher or lower than the number shown</div></div>
     <div class="how"><div class="hnum">3</div><div class="htxt">See the real answer, then share your score</div></div>
     <div style="height:1.25rem"></div>
-    <div class="daycard">
+    <div class="daycard" id="daycard-wrap">
       <div class="daycard-lbl" id="day-game-lbl">Today's game</div>
       <div class="daycard-val" id="day-date-lbl">Loading…</div>
     </div>
@@ -317,7 +319,7 @@
     <div class="si-sub">Save your streak and score history across all your devices.</div>
     <div class="si-feat"><div class="si-dot"></div><div class="si-ftxt">Streak synced — never lose your progress</div></div>
     <div class="si-feat"><div class="si-dot"></div><div class="si-ftxt">Full score history and distribution chart</div></div>
-    <div class="si-feat"><div class="si-dot"></div><div class="si-ftxt">Suggest questions for future games</div></div>
+    <div class="si-feat"><div class="si-dot"></div><div class="si-ftxt">Suggest questions for Community Sunday</div></div>
     <div style="height:1rem"></div>
     <div class="fi"><label>Email</label><input type="email" id="si-email" placeholder="you@example.com" /></div>
     <div class="fi"><label>Password</label><input type="password" id="si-pw" placeholder="••••••••" /></div>
@@ -337,7 +339,7 @@
     <button class="back-link" id="sug-back">← Back</button>
     <div class="page-title">Suggest a question</div>
     <div class="page-sub">Got a surprising statistic? Submit it and it might be featured in a future game.</div>
-    <div style="height:1.25rem"></div>
+    <div class="sunday-badge"><div class="sunday-dot"></div>Community Sunday — suggested questions every week</div>
 
     <div class="status-msg" id="sug-status"></div>
 
@@ -345,7 +347,7 @@
       <div style="background:var(--green-bg);border-radius:var(--rl);padding:1.5rem;text-align:center;margin-bottom:1.5rem">
         <div style="font-size:28px;margin-bottom:.5rem">✓</div>
         <div style="font-size:16px;font-weight:600;color:var(--green-tx);margin-bottom:.3rem">Question submitted!</div>
-        <div style="font-size:13px;color:var(--green-tx);opacity:.8">Your question will be reviewed and it may be featured in a future game.</div>
+        <div style="font-size:13px;color:var(--green-tx);opacity:.8">We'll review it and may feature it on a Community Sunday.</div>
       </div>
       <button class="btn-primary" id="sug-another-btn">Submit another</button>
     </div>
@@ -353,6 +355,10 @@
     <div id="sug-form">
       <div class="sug-section">
         <div class="sug-section-title">The question</div>
+        <div class="fi">
+          <label>Your name <span style="color:var(--text3);font-weight:400">(optional — shown as "Question by [name]")</span></label>
+          <input type="text" id="f-name" placeholder="e.g. Bob" />
+        </div>
         <div class="fi">
           <label>Category</label>
           <select id="f-category">
@@ -362,6 +368,10 @@
             <option>Human Body</option><option>Nature</option><option>Society</option>
             <option>Space</option><option>Technology</option><option>Other</option>
           </select>
+        </div>
+        <div class="fi" id="f-custom-cat-wrap" style="display:none">
+          <label>Custom category name</label>
+          <input type="text" id="f-custom-category" placeholder="e.g. Sports" />
         </div>
         <div class="fi">
           <label>Question</label>
@@ -473,6 +483,9 @@ function todayKey() {
 }
 function dayNum() {
   return Math.floor((new Date(todayKey()) - new Date('2026-03-18')) / 86400000) + 1
+}
+function isSunday() {
+  return new Date().getDay() === 0
 }
 
 // ── UI ────────────────────────────────────────────────
@@ -632,8 +645,11 @@ async function claimLocalPlay(user) {
 // ── RENDER: INTRO ─────────────────────────────────────
 async function renderIntro() {
   const today = new Date().toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' })
+  const sunday = isSunday()
   document.getElementById('day-date-lbl').textContent = `5 questions · ${today}`
-  document.getElementById('day-game-lbl').textContent = `Today's game · #${dayNum()}`
+  document.getElementById('day-game-lbl').textContent = sunday
+    ? `Community Sunday · #${dayNum()}`
+    : `Today's game · #${dayNum()}`
 
   const authEl = document.getElementById('intro-auth-el')
   authEl.innerHTML = ''
@@ -660,6 +676,17 @@ async function renderIntro() {
   document.getElementById('already-wrap').style.display = played ? 'block' : 'none'
   if (played) document.getElementById('already-score-lbl').textContent = `${lastScore}/5`
 
+  // Show/hide Community Sunday badge on daycard
+  const existingBadge = document.getElementById('sunday-badge-inline')
+  if (existingBadge) existingBadge.remove()
+  if (sunday) {
+    const badge = document.createElement('div')
+    badge.id = 'sunday-badge-inline'
+    badge.style.cssText = 'display:inline-flex;align-items:center;gap:6px;background:var(--amber-bg);color:var(--amber-tx);font-size:11px;font-weight:600;padding:4px 9px;border-radius:100px;margin-top:6px;'
+    badge.innerHTML = '<div style="width:5px;height:5px;border-radius:50%;background:var(--amber-tx)"></div>Community Sunday'
+    document.getElementById('daycard-wrap').appendChild(badge)
+  }
+
   const oldBtn = document.getElementById('play-btn')
   const newBtn = oldBtn.cloneNode(true)
   oldBtn.parentNode.replaceChild(newBtn, oldBtn)
@@ -670,7 +697,8 @@ async function renderIntro() {
     newBtn.textContent = 'Resume puzzle'; newBtn.disabled = false
     newBtn.addEventListener('click', resumeGame)
   } else {
-    newBtn.textContent = "Play today's game"; newBtn.disabled = false
+    newBtn.textContent = sunday ? "Play Community Sunday" : "Play today's game"
+    newBtn.disabled = false
     newBtn.addEventListener('click', startGame)
   }
 
@@ -723,7 +751,7 @@ function renderDoneAuth() {
   if (currentUser) {
     const cta = document.createElement('div')
     cta.className = 'suggest-cta'
-    cta.innerHTML = `<div><div class="suggest-cta-left">Suggest a question</div><div class="suggest-cta-sub">Submit a stat for a future game</div></div><div class="suggest-cta-arrow">→</div>`
+    cta.innerHTML = `<div><div class="suggest-cta-left">Suggest a question</div><div class="suggest-cta-sub">Submit a stat for Community Sunday</div></div><div class="suggest-cta-arrow">→</div>`
     cta.addEventListener('click', () => goSuggest('done'))
     sugEl.appendChild(cta)
   }
@@ -764,8 +792,9 @@ async function renderResults(score, answers, stats) {
   const eg = document.getElementById('egrid'); eg.innerHTML = ''
   answers.forEach(r => { const b=document.createElement('div'); b.className='eblock '+(r?'ok':'no'); eg.appendChild(b) })
   const emo = answers.map(r => r?'🟩':'🟥').join('')
+  const shareLabel = isSunday() ? 'PopGuess Community Sunday' : `PopGuess #${dayNum()}`
   document.getElementById('sharebox').textContent =
-    `PopGuess #${dayNum()}\n${score}/5  🔥 ${stats.streak}-day streak\n\n${emo}\n\nhttps://samtross10.github.io/popGuess/`
+    `${shareLabel}\n${score}/5  🔥 ${stats.streak}-day streak\n\n${emo}\n\nhttps://samtross10.github.io/popGuess/`
   renderDoneAuth()
 }
 
@@ -919,17 +948,32 @@ function setSugDir(dir) {
   updatePreview()
 }
 
-const previewFields = ['f-category','f-question','f-threshold-display','f-answer-display']
+const previewFields = ['f-category','f-question','f-threshold-display','f-answer-display','f-name','f-custom-category']
 previewFields.forEach(id => {
   const el = document.getElementById(id)
   if (el) el.addEventListener('input', updatePreview)
 })
 
+// Show custom category field when "Other" is selected
+document.getElementById('f-category').addEventListener('change', () => {
+  const isOther = document.getElementById('f-category').value === 'Other'
+  document.getElementById('f-custom-cat-wrap').style.display = isOther ? 'block' : 'none'
+  updatePreview()
+})
+
+function buildCategoryLabel() {
+  const sel    = document.getElementById('f-category').value
+  const custom = document.getElementById('f-custom-category').value.trim()
+  const name   = document.getElementById('f-name').value.trim()
+  const cat    = sel === 'Other' ? (custom || 'Other') : sel
+  return name ? `${cat} · Question by ${name}` : cat
+}
+
 function updatePreview() {
-  const cat  = document.getElementById('f-category').value
   const q    = document.getElementById('f-question').value.trim()
   const thrD = document.getElementById('f-threshold-display').value.trim()
   const ansD = document.getElementById('f-answer-display').value.trim()
+  const cat  = buildCategoryLabel()
   document.getElementById('prev-cat').textContent = cat  || 'Category'
   document.getElementById('prev-q').textContent   = q    || 'Your question will appear here…'
   document.getElementById('prev-thr').textContent = thrD || '—'
@@ -939,7 +983,8 @@ function updatePreview() {
 }
 
 async function submitSuggestion() {
-  const category          = document.getElementById('f-category').value
+  const categoryRaw       = document.getElementById('f-category').value
+  const category          = buildCategoryLabel()
   const question          = document.getElementById('f-question').value.trim()
   const threshold         = parseFloat(document.getElementById('f-threshold').value)
   const threshold_display = document.getElementById('f-threshold-display').value.trim()
@@ -948,7 +993,7 @@ async function submitSuggestion() {
   const source            = document.getElementById('f-source').value.trim()
   const btn               = document.getElementById('sug-submit-btn')
 
-  if (!category)          { showSugStatus('Please select a category.', 'error'); return }
+  if (!categoryRaw)       { showSugStatus('Please select a category.', 'error'); return }
   if (!question)          { showSugStatus('Please enter your question.', 'error'); return }
   if (isNaN(threshold))   { showSugStatus('Please enter the threshold number.', 'error'); return }
   if (!threshold_display) { showSugStatus('Please enter the threshold display label.', 'error'); return }
@@ -976,11 +1021,12 @@ async function submitSuggestion() {
 }
 
 function resetSugForm() {
-  ['f-category','f-question','f-threshold','f-threshold-display','f-answer','f-answer-display','f-source']
+  ['f-name','f-category','f-custom-category','f-question','f-threshold','f-threshold-display','f-answer','f-answer-display','f-source']
     .forEach(id => { const el=document.getElementById(id); if(el) el.value='' })
   sugDir = null
   document.getElementById('dir-higher').classList.remove('active')
   document.getElementById('dir-lower').classList.remove('active')
+  document.getElementById('f-custom-cat-wrap').style.display = 'none'
   document.getElementById('sug-form').style.display    = 'block'
   document.getElementById('sug-success').style.display = 'none'
   document.getElementById('sug-status').style.display  = 'none'
@@ -1031,13 +1077,20 @@ document.getElementById('sug-back').addEventListener('click', () => {
 function boot() {
   db.auth.onAuthStateChange(async (event, session) => {
     console.log('auth:', event, session?.user?.email ?? 'none')
-    currentUser = session?.user ?? null
 
     // Clean OAuth hash AFTER Supabase has already read it
     if (window.location.hash.includes('access_token')) {
       window.history.replaceState({}, document.title, window.location.pathname)
     }
 
+    // TOKEN_REFRESHED fires silently every hour — it doesn't change
+    // who is logged in so we must NOT re-render or clone buttons.
+    // Only act on events that actually change auth state.
+    if (event === 'TOKEN_REFRESHED') return
+
+    currentUser = session?.user ?? null
+
+    // Always re-render intro so chips and play button are correct
     await renderIntro()
 
     if (event === 'SIGNED_IN') {
