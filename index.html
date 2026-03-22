@@ -1075,7 +1075,6 @@ document.getElementById('sug-back').addEventListener('click', () => {
 
 // ── BOOT ──────────────────────────────────────────────
 function boot() {
-  if (!initDb()) return  // CDN failed — error shown, stop here
   db.auth.onAuthStateChange(async (event, session) => {
     console.log('auth:', event, session?.user?.email ?? 'none')
 
