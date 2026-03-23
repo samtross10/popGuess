@@ -872,11 +872,8 @@ async function doSignIn() {
 }
 
 async function doGoogleSignIn() {
-  const { error } = await db.auth.signInWithOAuth({
-    provider: 'google',
-    options: { redirectTo: 'https://samtross10.github.io/popGuess/' }
-  })
-  if (error) showSiMsg(error.message, 'error')
+  const { error } = await db.auth.signInWithOAuth({ provider:'google', options:{ redirectTo:window.location.href } })
+  if (error) showSiMsg(error.message,'error')
 }
 
 async function doSignOut() {
@@ -892,7 +889,14 @@ function showSiMsg(text,type) {
 // SUGGEST
 // ════════════════════════════════════════════════════════
 function showSuggestScreen() {
-  resetSugForm()
+  // Try to restore a saved draft — only reset if no draft exists
+  const hasDraft = restoreSugDraft()
+  if (!hasDraft) resetSugForm()
+  else {
+    document.getElementById('sug-form').style.display='block'
+    document.getElementById('sug-success').style.display='none'
+    document.getElementById('sug-status').style.display='none'
+  }
   renderSuggestChip()
   loadPastSuggestions()
   showScreen('s-suggest')
@@ -923,6 +927,7 @@ function setSugDir(dir) {
   document.getElementById('dir-higher').classList.toggle('active', dir==='higher')
   document.getElementById('dir-lower').classList.toggle('active',  dir==='lower')
   updatePreview()
+  saveSugDraft()
 }
 
 async function submitSuggestion() {
@@ -947,22 +952,77 @@ async function submitSuggestion() {
 
   btn.textContent='Submitting…'; btn.disabled=true
 
+  // Timeout wrapper — if Supabase hangs for >10s, fail gracefully
+  const timeoutPromise = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error('Request timed out')), 10000)
+  )
+
   try {
-    const { error } = await db.from('suggestions').insert({
+    const insertPromise = db.from('suggestions').insert({
       category, question, threshold, threshold_display,
       answer, answer_display, source, direction:sugDir,
       user_id:USER?.id ?? null, email:USER?.email ?? null,
     })
+    const { error } = await Promise.race([insertPromise, timeoutPromise])
     if (error) { showSugMsg(`Error: ${error.message}`,'error'); return }
+    clearSugDraft()
     document.getElementById('sug-form').style.display='none'
     document.getElementById('sug-success').style.display='block'
     loadPastSuggestions()
   } catch(e) {
-    showSugMsg('Something went wrong. Please try again.','error')
-    console.error(e)
+    console.error('submitSuggestion:', e)
+    showSugMsg(e.message==='Request timed out'
+      ? 'Request timed out. Check your connection and try again.'
+      : 'Something went wrong. Please try again.', 'error')
   } finally {
     btn.textContent='Submit question'; btn.disabled=false
   }
+}
+
+// Draft persistence — saves form to localStorage so refreshes don't wipe it
+const SUG_DRAFT_KEY = 'pg_sug_draft'
+
+function saveSugDraft() {
+  const draft = {
+    name:     document.getElementById('f-name').value,
+    category: document.getElementById('f-category').value,
+    custom:   document.getElementById('f-custom-cat').value,
+    question: document.getElementById('f-question').value,
+    threshold:document.getElementById('f-threshold').value,
+    thrDisp:  document.getElementById('f-thr-display').value,
+    answer:   document.getElementById('f-answer').value,
+    ansDisp:  document.getElementById('f-ans-display').value,
+    source:   document.getElementById('f-source').value,
+    dir:      sugDir,
+  }
+  localStorage.setItem(SUG_DRAFT_KEY, JSON.stringify(draft))
+}
+
+function restoreSugDraft() {
+  try {
+    const raw = localStorage.getItem(SUG_DRAFT_KEY)
+    if (!raw) return false
+    const d = JSON.parse(raw)
+    document.getElementById('f-name').value        = d.name     || ''
+    document.getElementById('f-category').value    = d.category || ''
+    document.getElementById('f-custom-cat').value  = d.custom   || ''
+    document.getElementById('f-question').value    = d.question || ''
+    document.getElementById('f-threshold').value   = d.threshold|| ''
+    document.getElementById('f-thr-display').value = d.thrDisp  || ''
+    document.getElementById('f-answer').value      = d.answer   || ''
+    document.getElementById('f-ans-display').value = d.ansDisp  || ''
+    document.getElementById('f-source').value      = d.source   || ''
+    if (d.dir) setSugDir(d.dir)
+    if (d.category === 'Other') {
+      document.getElementById('f-custom-wrap').style.display = 'block'
+    }
+    updatePreview()
+    return true
+  } catch { return false }
+}
+
+function clearSugDraft() {
+  localStorage.removeItem(SUG_DRAFT_KEY)
 }
 
 function resetSugForm() {
@@ -1042,23 +1102,28 @@ document.getElementById('f-category').addEventListener('change', () => {
     document.getElementById('f-category').value==='Other' ? 'block' : 'none'
   updatePreview()
 })
-;['f-name','f-question','f-thr-display','f-ans-display','f-custom-cat'].forEach(id => {
-  const el=document.getElementById(id); if(el) el.addEventListener('input', updatePreview)
+;['f-name','f-question','f-thr-display','f-ans-display','f-custom-cat',
+   'f-threshold','f-answer','f-source'].forEach(id => {
+  const el=document.getElementById(id)
+  if(el) {
+    el.addEventListener('input', updatePreview)
+    el.addEventListener('input', saveSugDraft)
+  }
 })
+// Also save draft when category/direction changes
+document.getElementById('f-category').addEventListener('change', saveSugDraft)
 
 // ════════════════════════════════════════════════════════
 // BOOT — runs once, sets USER, renders once, then listens
 // ════════════════════════════════════════════════════════
 async function boot() {
   // Handle Google OAuth redirect hash before anything else
-  // Get session first — this reads the access_token hash if present
-  const { data:{ session } } = await db.auth.getSession()
-
-  // Clean the hash AFTER Supabase has already read it
   if (window.location.hash.includes('access_token')) {
     window.history.replaceState({}, document.title, window.location.pathname)
   }
 
+  // Get session synchronously — no event waiting
+  const { data:{ session } } = await db.auth.getSession()
   USER = session?.user ?? null
 
   // Render exactly once with correct state
